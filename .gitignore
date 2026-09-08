@@ -1,0 +1,13 @@
+# JetBrains IDE
+.idea/
+*.iml
+
+# macOS
+.DS_Store
+
+# Editors
+*.swp
+*~
+
+# Local scratch copy of an earlier POC
+concept_poc_copy/

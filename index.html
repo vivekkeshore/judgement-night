@@ -151,14 +151,40 @@ input{font:inherit}
 .lb .nm{font-weight:600;font-size:15px}
 .lb .sc{font-family:var(--mono);font-weight:600;font-size:20px;font-variant-numeric:tabular-nums}
 .lb .sc.neg{color:var(--ruby)}
+/* leaderboard portraits — Kattappa for second place, the crying face for last.
+   No offsets anywhere: .pop is one absolutely positioned wrapper holding the picture and its
+   caption in normal flow, so the browser stacks them and the caption is aligned by construction.
+   Only the widths are specified — each image's own aspect gives the height, and at the resting
+   width that height already equals the row height. */
+.lb li.haspic{grid-template-columns:auto 1fr auto auto}
+.lb .pic{position:relative;width:var(--pw);height:28px}
+.lb .pic.k{--pw:54px;--phw:280px}    /* kattappa.gif 480x250 -> 54px wide is 28px tall */
+.lb .pic.c{--pw:34px;--phw:220px}    /* crying.jpg  1120x928 -> 34px wide is 28px tall */
+.lb .pic .pop{position:absolute;right:0;top:50%;transform:translateY(-50%);
+  width:var(--pw);cursor:pointer;z-index:1;transition:width .18s ease}
+.lb .pic .pop:hover{width:var(--phw);z-index:60}
+.lb .pic .frame{display:block;overflow:hidden;background:#fff;
+  border:1px solid var(--card-deep);border-radius:5px;
+  transition:border-radius .18s ease,box-shadow .18s ease}
+.lb .pic .pop:hover .frame{border-radius:10px;border-color:var(--gold);box-shadow:0 14px 34px rgba(0,0,0,.55)}
+.lb .pic img{display:block;width:100%;height:auto}
+/* hidden until hover, and display:none so it adds no height to the resting thumbnail */
+.lb .pic .cap{display:none;margin-top:5px;padding:5px 8px;text-align:center;
+  font-family:var(--display);font-weight:700;font-size:14px;line-height:1.2;
+  color:var(--gold-pale);background:rgba(10,2,3,.94);
+  border:1px solid var(--gold-deep);border-radius:7px;box-shadow:0 8px 20px rgba(0,0,0,.5)}
+.lb .pic .pop:hover .cap{display:block}
 .status{padding:12px 14px;font-size:13.5px;color:var(--ink-soft)}
 .status b{color:var(--ink)}
 .status .big{font-family:var(--display);font-size:22px;color:var(--ink);font-weight:700;margin:0 0 4px}
 .status.done{background:var(--good);color:#fff}
 .status.done .big,.status.done b{color:#fff}
 
-/* live strip — pinned under the rules ticker */
-.strip{position:sticky;top:var(--mastbottom);z-index:20;display:grid;grid-template-columns:repeat(var(--n),1fr);gap:8px;
+/* live strip — pinned under the rules ticker.
+   z-index outranks both the masthead (25) and the ticker (30) so the apsara, who overflows
+   upward out of this band, paints over them instead of disappearing behind. The three boxes
+   are stacked vertically and never overlap themselves, so nothing else is affected. */
+.strip{position:sticky;top:var(--mastbottom);z-index:31;display:grid;grid-template-columns:repeat(var(--n),1fr);gap:8px;
   margin:0 0 12px;padding:10px 0 12px;
   background:linear-gradient(rgba(26,5,8,.96),rgba(26,5,8,.8));backdrop-filter:blur(8px);
   border-bottom:1px solid rgba(217,164,65,.28)}
@@ -166,6 +192,62 @@ input{font:inherit}
 .strip .pp .n{font-family:var(--display);font-weight:700;font-size:16px;color:var(--pc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .strip .pp .v{font-family:var(--mono);font-weight:600;font-size:26px;line-height:1.1;font-variant-numeric:tabular-nums}
 .strip .pp .v.neg{color:var(--ruby)}
+
+/* figures on the strip: the apsara dances on the leader's card, and the fallen king burns on
+   whoever was just dethroned. Both are absolutely positioned against the strip (sticky counts
+   as positioned — adding position:relative would break the pinning) and travel on --ax.
+   Both are anchored by their feet and overflow *upward* out of the strip, so the pinned band
+   keeps exactly the height it had before either existed — nothing below them ever moves.
+   Base height is the masthead's own height, so they scale with the header; --apzoom multiplies
+   that (1.2 = 20% larger), which sends them up over the ticker too. */
+:root{--apsarah:176px;--apzoom:1.2;--apflight:2.6s}
+@media(max-width:700px){:root{--apsarah:120px}}
+.fig{position:absolute;bottom:calc(100% - 14px);left:0;
+  height:calc(var(--apzoom) * min(var(--apsarah),calc(var(--mastbottom) - var(--tickerh) + 14px)));
+  aspect-ratio:180/314;width:auto;
+  z-index:2;pointer-events:none;
+  transform-origin:50% 100%;transform:translate3d(var(--ax,0px),0,0) scale(var(--as,1));
+  /* a long, evenly-eased drift: they leave slowly, glide, and settle without a bounce */
+  transition:transform var(--apflight) cubic-bezier(.42,0,.18,1);
+  animation:apIn .8s ease-out}
+.fig.noanim{transition:none}
+@keyframes apIn{from{opacity:0}to{opacity:1}}
+/* three layers so the animations never fight over one transform:
+   .fig travels, .lift carries it across between seats, .niche keeps floating throughout */
+.fig .lift{position:relative;width:100%;height:100%}
+.fig.flying .lift{animation:apGlide var(--apflight) ease-in-out}
+/* it leans into the crossing and drifts a touch further off, then comes back as it lands */
+@keyframes apGlide{0%,100%{transform:none}
+  18%{transform:translateY(-4px) rotate(var(--lean,0deg)) scale(.985)}
+  50%{transform:translateY(-5px) rotate(var(--lean,0deg)) scale(.97)}
+  82%{transform:translateY(-3px) rotate(calc(var(--lean,0deg)/3)) scale(.99)}}
+.fig .niche{position:relative;width:100%;height:100%;animation:apFloat 4.2s ease-in-out infinite}
+@keyframes apFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.fig img,.fig video{width:100%;height:100%;display:block}
+/* a pool of light at their feet, so they stand on the card rather than hover over it */
+.fig .base{position:absolute;left:-16%;right:-16%;bottom:0;height:15px;border-radius:50%;
+  animation:apAura 2.6s ease-in-out infinite}
+@keyframes apAura{0%,100%{transform:scaleX(1);opacity:.85}50%{transform:scaleX(1.2);opacity:.5}}
+.apsara img{filter:drop-shadow(0 6px 10px rgba(0,0,0,.55)) drop-shadow(0 0 12px rgba(217,164,65,.35))}
+.apsara .base{background:radial-gradient(ellipse at center,rgba(251,231,166,.55),rgba(217,164,65,.18) 45%,transparent 72%)}
+/* the fallen king — an opaque clip with its own letterboxing, so it gets a charred alcove to
+   sit in. The 4/5 box plus object-fit:cover crops away exactly the black bars top and bottom. */
+.fallen{aspect-ratio:4/5}
+.fallen video{object-fit:cover}
+.fallen .niche{border-radius:50% 50% 8px 8px/20% 20% 5px 5px;overflow:hidden;background:#0A0203;
+  box-shadow:0 0 0 2px #7A1420,0 0 0 3.5px #240609,0 10px 22px rgba(0,0,0,.65),0 0 26px rgba(179,32,46,.45)}
+.fallen .niche::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  box-shadow:inset 0 0 16px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,180,120,.22);
+  background:linear-gradient(rgba(179,32,46,.1),rgba(10,2,3,.34))}
+.fallen .base{background:radial-gradient(ellipse at center,rgba(255,120,60,.5),rgba(179,32,46,.2) 45%,transparent 72%)}
+.strip .pp.lead{box-shadow:0 0 0 2px var(--gold),0 8px 20px rgba(217,164,65,.3)}
+.strip .pp.fell{box-shadow:0 0 0 2px #7A1420,0 8px 20px rgba(179,32,46,.28)}
+.strip .pp.blessed{animation:apBlessed .9s ease-out}
+@keyframes apBlessed{from{box-shadow:0 0 0 2px var(--gold),0 0 0 0 rgba(251,239,210,.7)}to{box-shadow:0 0 0 2px var(--gold),0 0 0 26px rgba(251,239,210,0)}}
+@media(prefers-reduced-motion:reduce){
+  .fig,.fig *{animation:none!important}
+  .fig{transition:none}
+}
 
 /* score table — the wrap is the scrollport the sticky head/foot resolve against,
    so it needs a bounded height or top:0 / bottom:0 are no-ops */
@@ -228,6 +310,30 @@ tfoot td.navy{color:#8FA3FF!important}
 .section h2{font-family:var(--display);color:var(--card);font-weight:700;font-size:22px;margin:0 0 10px}
 .chartpanel{padding:16px 18px 8px}
 .chart{width:100%;height:auto;display:block}
+/* The wrap is exactly the SVG's box, and that box always keeps the viewBox's 1000:380 ratio.
+   So a point (vx,vy) in chart coordinates is simply left:vx/10% / top:vy/3.8% — the clip below
+   tracks the graph on resize with no JS listener at all. */
+.chartwrap{position:relative}
+:root{--udtaw:240px;--udtah:172px}  /* the card's size — keep width ~1.4x height so the crop band stays put */
+/* Only the pill is visible until you hover — the clip itself would sit on top of the graph.
+   The box is transparent and pointer-events:none, so it obstructs neither sight nor clicks. */
+/* Sized in explicit px, not aspect-ratio + a percentage height: a percentage resolving against
+   an auto-height container is exactly the case Safari gets wrong, and when it fails the <video>
+   falls back to its intrinsic 720x1280 and swamps the chart.
+   The box being wider than the clip is portrait means object-fit:cover crops the top and bottom,
+   keeping only the band the bird flies through; object-position picks that band. */
+.udta{position:absolute;width:var(--udtaw);height:var(--udtah);z-index:3;pointer-events:none}
+.udta .hint{position:absolute;left:50%;top:0;transform:translateX(-50%);pointer-events:auto;cursor:pointer;
+  font:600 8.5px/1 var(--mono);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;
+  color:#fff;background:rgba(179,32,46,.94);border:1px solid var(--gold);border-radius:999px;
+  padding:3px 6px;box-shadow:0 2px 6px rgba(0,0,0,.45);transition:opacity .15s ease}
+.udta .hint:hover{background:var(--ruby)}
+.udta video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 48%;display:block;background:#000;
+  border-radius:6px;border:1.5px solid var(--ruby);
+  box-shadow:0 10px 22px rgba(0,0,0,.5),0 0 16px rgba(217,164,65,.4);
+  opacity:0;visibility:hidden;pointer-events:none;transition:opacity .18s ease}
+.udta.on video{opacity:1;visibility:visible;pointer-events:auto}
+.udta.on .hint{opacity:0}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-soft);padding:6px 2px 2px}
 .legend i{display:inline-block;width:16px;height:4px;border-radius:2px;vertical-align:middle;margin-right:6px}
 .podium{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;margin-top:20px}
@@ -308,7 +414,7 @@ tfoot td.navy{color:#8FA3FF!important}
     <div class="section">
       <h2>How the night is unfolding</h2>
       <div class="panel chartpanel">
-        <svg class="chart" id="chart" viewBox="0 0 1000 380" role="img" aria-label="Running total by round"></svg>
+        <div class="chartwrap" id="chartwrap"><svg class="chart" id="chart" viewBox="0 0 1000 380" role="img" aria-label="Running total by round"></svg></div>
         <div class="legend" id="legend"></div>
       </div>
     </div>
@@ -443,7 +549,7 @@ function syncSticky(){
   const c1=$("table").querySelector("thead th.rd");
   if(c1)rs.setProperty("--col1",Math.floor(c1.getBoundingClientRect().width)+"px");
 }
-addEventListener("resize",syncSticky);
+addEventListener("resize",()=>{syncSticky();placeFigures()});
 if(document.fonts)document.fonts.ready.then(syncSticky); // display font changes header height
 
 function renderAll(){
@@ -488,10 +594,22 @@ function renderAll(){
   P.forEach((p,i)=>{const td=$("table").querySelectorAll("tfoot .tot")[i];td.textContent=fmt(T[i]);td.classList.toggle("neg",T[i]<0)});
   // strip
   const ord=ordered(),first=ord[0],last=ord[ord.length-1];
-  $("strip").style.setProperty("--n",P.length);
-  $("strip").innerHTML=P.map((p,i)=>`<div class="pp" style="--pc:${p.c}"><div class="n">${T[i]===first.tot&&scored>0?"👑 ":""}${p.n}${T[i]===last.tot&&last.tot!==first.tot&&scored>0?" 🩴":""}</div><div class="v ${T[i]<0?'neg':''} ${p.navy?'navy':''}">${fmt(T[i])}</div></div>`).join("");
+  const stripEl=$("strip");
+  stripEl.style.setProperty("--n",P.length);
+  const cards=P.map((p,i)=>`<div class="pp ${scored>0&&i===first.i?"lead":""} ${i===fallenSeat?"fell":""}" style="--pc:${p.c}"><div class="n">${T[i]===first.tot&&scored>0?"👑 ":""}${p.n}${T[i]===last.tot&&last.tot!==first.tot&&scored>0?" 🩴":""}</div><div class="v ${T[i]<0?'neg':''} ${p.navy?'navy':''}">${fmt(T[i])}</div></div>`).join("");
+  // replace only the player cards — the apsara is a sibling and must survive the re-render,
+  // or her dance restarts on every keystroke
+  stripEl.querySelectorAll(".pp").forEach(n=>n.remove());
+  stripEl.insertAdjacentHTML("afterbegin",cards);
+  renderApsara(scored>0?first.i:null);
   // leaderboard
-  $("lb").innerHTML=ord.map((p,k)=>`<li class="${k===0?'first':''} ${k===ord.length-1?'last':''}"><span class="rk">${k===0?'👑 Sultan-e-Hind':k===ord.length-1?'🩴 Gaddar':['','2nd','3rd','4th','5th','6th','7th','8th'][k]}</span><span class="nm ${p.navy?'navy':''}">${p.n}</span><span class="sc ${p.tot<0?'neg':''} ${p.navy?'navy':''}">${fmt(p.tot)}</span></li>`).join("");
+  /* the gif is 4.4MB, so the row shows a 7KB still until hover swaps in the animation */
+  const KATT=`<span class="pic k"><span class="pop"><span class="frame"><img src="static/kattappa_still.jpg" data-still="static/kattappa_still.jpg" data-gif="static/kattappa.gif" alt=""></span></span></span>`;
+  const CRY=`<span class="pic c"><span class="pop"><span class="frame"><img src="static/crying.jpg" alt=""></span><b class="cap">Jai Beam, Jai Pillar</b></span></span>`;
+  $("lb").innerHTML=ord.map((p,k)=>{
+    const pic=scored===0?"":k===1?KATT:k===ord.length-1?CRY:"";   // nothing to rank before a round is scored
+    return `<li class="${k===0?'first':''} ${k===ord.length-1?'last':''} ${pic?'haspic':''}"><span class="rk">${k===0?'👑 Sultan-e-Hind':k===ord.length-1?'🩴 Gaddar':['','2nd','3rd','4th','5th','6th','7th','8th'][k]}</span><span class="nm ${p.navy?'navy':''}">${p.n}</span>${pic}<span class="sc ${p.tot<0?'neg':''} ${p.navy?'navy':''}">${fmt(p.tot)}</span></li>`;
+  }).join("");
   // status + meta
   const finished=cur===-1;
   $("meta").innerHTML=`${P.length} players · ${N} rounds<br>Round <b>${finished?N:cur+1} / ${N}</b> · Trump <b>${TRUMPS[(finished?N-1:cur)%4][0]} ${TRUMPS[(finished?N-1:cur)%4][1]}</b>`;
@@ -500,6 +618,12 @@ function renderAll(){
   else{const t=TRUMPS[cur%4];stEl.className="panel status";const fb=P[cur%P.length],lb=P[(cur+P.length-1)%P.length];stEl.innerHTML=`<p class="big">Round ${cur+1} · ${t[0]} ${t[1]}</p>${G.cards[cur]} card${G.cards[cur]>1?"s":""} each. <b>${fb.n}</b> opens the bidding, <b>${lb.n}</b> bids last. Enter every bid, play the hand, flip ✓ to ✗ for anyone who missed, then hit <b>Score it</b> in the Status column. Nothing counts until a round is scored. <br><br><b>${scored}</b> of ${N} rounds scored.`;$("podium").hidden=true}
   renderTicker(ord,finished);renderStock(done);renderChart();syncSticky();save();
 }
+/* delegated, because renderAll rebuilds the leaderboard: swap the still for the gif on hover */
+$("lb").addEventListener("mouseover",e=>{const i=e.target.closest("img[data-gif]");
+  if(i&&!i.dataset.on){i.dataset.on="1";i.src=i.dataset.gif}});
+$("lb").addEventListener("mouseout",e=>{const i=e.target.closest("img[data-gif]");
+  if(i&&i.dataset.on){delete i.dataset.on;i.src=i.dataset.still}});
+
 $("table").addEventListener("input",e=>{
   if(e.target.tagName!=="INPUT")return;
   const r=+e.target.dataset.r,p=+e.target.dataset.p,max=G.cards[r];
@@ -517,6 +641,97 @@ $("table").addEventListener("click",e=>{
   const b=e.target.closest(".res");if(!b||b.disabled)return;
   const r=+b.dataset.r,p=+b.dataset.p;G.res[r][p]=G.res[r][p]===0?1:0;renderAll();
 });
+
+/* ---------- figures on the strip ---------- */
+/* The apsara stands on the leading player's card. When the lead changes, the seat she leaves
+   is the dethroned king, and the Bahubali clips start burning on that card instead — playing
+   one after the other on a loop until the next lead change moves them on.
+   Both are persistent DOM nodes: renderAll swaps the .pp cards around them, so their playback
+   is never restarted by a keystroke. */
+const APSARA_HTML=`<div class="niche"><img src="static/apsara_dance.webp" alt=""></div><div class="base"></div>`;
+const FALLEN_HTML=`<div class="niche"></div><div class="base"></div>`;
+const FALLEN_CLIPS=["static/bahubali1.mp4","static/bahubali2.mp4"];
+// read the crossing time off --apflight so the CSS stays the single source of truth
+const FLIGHT=(parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--apflight"))||2.6)*1000;
+let apsaraSeat=null, fallenSeat=null, flightT=null, fallT=null;
+const prefersReduced=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// re-measure a figure's spot: card widths move with the window and with the player count
+function placeFigure(el,seat){
+  if(!el||seat==null)return;
+  const c=$("strip").querySelectorAll(".pp")[seat];if(!c)return;
+  el.style.setProperty("--as",Math.min(1,Math.max(.5,c.offsetWidth/150)).toFixed(2));
+  el.style.setProperty("--ax",(c.offsetLeft+c.offsetWidth/2-el.offsetWidth/2)+"px"); // offsetWidth ignores the scale, which is what we want
+}
+function placeFigures(){
+  const strip=$("strip");
+  placeFigure(strip.querySelector(".apsara"),apsaraSeat);
+  placeFigure(strip.querySelector(".fallen"),fallenSeat);
+}
+
+// shared arrival/glide plumbing for both figures
+function moveFigure(el,from,to,onArrive){
+  const strip=$("strip"),cards=strip.querySelectorAll(".pp");
+  const moving=from!=null&&from!==to&&cards[from];
+  if(moving&&!prefersReduced()){
+    el.style.setProperty("--lean",(cards[to].offsetLeft>cards[from].offsetLeft?5:-5)+"deg");
+    el.classList.remove("flying");void el.offsetWidth;el.classList.add("flying"); // restart the glide
+    return setTimeout(()=>{el.classList.remove("flying");if(onArrive)onArrive()},FLIGHT);
+  }
+  return null;
+}
+
+function renderApsara(seat){
+  const strip=$("strip");let a=strip.querySelector(".apsara");
+  if(seat==null){if(a)a.remove();apsaraSeat=null;renderFallen(null);return} // nothing scored yet — no one to dance for
+  const cards=strip.querySelectorAll(".pp");if(!cards[seat])return;
+  const arriving=!a;
+  if(arriving){a=document.createElement("div");a.className="fig apsara noanim";a.setAttribute("aria-hidden","true");
+    a.innerHTML=`<div class="lift">${APSARA_HTML}</div>`;strip.appendChild(a)}
+  const dethroned=!arriving&&apsaraSeat!=null&&apsaraSeat!==seat?apsaraSeat:null;
+  if(dethroned!=null){
+    clearTimeout(flightT);
+    flightT=moveFigure(a,apsaraSeat,seat,()=>{
+      const t=$("strip").querySelectorAll(".pp")[seat];if(t&&apsaraSeat===seat)t.classList.add("blessed")});
+  }
+  apsaraSeat=seat;
+  placeFigure(a,seat);
+  // she takes her first spot outright — without this she glides in from the strip's left edge
+  if(arriving){void a.offsetWidth;a.classList.remove("noanim")}
+  if(dethroned!=null)renderFallen(dethroned);   // the seat she left is the fallen king
+}
+
+/* the dethroned player's card. Only ever set by renderApsara, because who fell is a fact about
+   history — the current standings alone cannot tell you who used to be on top. */
+function renderFallen(seat){
+  const strip=$("strip");let f=strip.querySelector(".fallen");
+  if(seat==null){if(f)f.remove();fallenSeat=null;return}
+  const cards=strip.querySelectorAll(".pp");if(!cards[seat])return;
+  const arriving=!f;
+  if(arriving){f=document.createElement("div");f.className="fig fallen noanim";f.setAttribute("aria-hidden","true");
+    f.innerHTML=`<div class="lift">${FALLEN_HTML}</div>`;strip.appendChild(f)}
+  const changed=arriving||fallenSeat!==seat;
+  if(!arriving){clearTimeout(fallT);fallT=moveFigure(f,fallenSeat,seat)}
+  fallenSeat=seat;
+  // the cards were built from the previous fallenSeat, so clear the old ring before marking
+  cards.forEach(c=>c.classList.remove("fell"));
+  cards[seat].classList.add("fell");
+  placeFigure(f,seat);
+  if(arriving){void f.offsetWidth;f.classList.remove("noanim")}
+  if(changed)playFallenClips(f);   // a fresh dethroning restarts the sequence at bahubali1
+}
+/* bahubali1 then bahubali2 then round again. The <video> carries no loop attribute, so "ended"
+   fires and we advance; rebuilding the element each time avoids stacking listeners. */
+function playFallenClips(el){
+  const niche=el.querySelector(".niche");
+  niche.innerHTML=`<video muted playsinline preload="auto" disablepictureinpicture></video>`;
+  const v=niche.querySelector("video");
+  let i=0;
+  const next=()=>{v.src=FALLEN_CLIPS[i++%FALLEN_CLIPS.length];v.play().catch(()=>{})};
+  v.addEventListener("ended",next);
+  v.muted=true;                     // the property, not just the attribute — autoplay is refused without it
+  next();
+}
 
 /* ---------- ticker ---------- */
 function renderTicker(ord,finished){
@@ -557,6 +772,46 @@ function renderChart(){
     ends.forEach(e=>{g+=`<text x="${x(upto)+10}" y="${e.yy+4}" font-family="Libre Franklin,sans-serif" font-size="12.5" font-weight="600" fill="${e.s.c}">${e.s.n} <tspan font-family="IBM Plex Mono,monospace" font-weight="500">${fmt(e.s.c2[upto])}</tspan></text>`;});}
   $("chart").innerHTML=g;
   $("legend").innerHTML=series.map(s=>`<span><i style="background:${s.c}"></i>${s.n}</span>`).join("")+`<span style="margin-left:auto">Thick line = current leader</span>`;
+  // the loser's clip rides the end of the lowest line, in the chart's own coordinates
+  const lowest=ord[ord.length-1];
+  placeUdta(upto>0&&ord[0].tot!==lowest.tot ? {x:x(upto),y:y(cum(lowest.i)[upto]),H} : null);
+}
+
+/* ---------- udta hi firu — pinned to the end of the last-placed line ---------- */
+/* Muted and paused on its poster until hovered, so the clip itself is not fetched until
+   someone actually asks for it. Sound needs a user gesture: hover alone does not grant one,
+   but any earlier click on the page (scoring a round, say) usually does. If the browser still
+   refuses, we retry muted so at least the picture plays. */
+
+function placeUdta(at){
+  const wrap=$("chartwrap");if(!wrap)return;
+  let el=wrap.querySelector(".udta");
+  if(!at){if(el)el.remove();return}
+  if(!el){
+    el=document.createElement("div");el.className="udta";
+    el.title="Hover to play with sound";
+    el.innerHTML=`<span class="hint">♪ hover</span>`
+      +`<video src="static/udta_hi_firu.mp4" poster="static/udta_poster.jpg" muted loop playsinline preload="none" disablepictureinpicture></video>`;
+    const v=el.querySelector("video");
+    const start=()=>{el.classList.add("on");v.muted=false;v.currentTime=0;
+      v.play().catch(()=>{v.muted=true;v.play().catch(()=>{})})};
+    const stop=()=>{el.classList.remove("on");v.pause();v.currentTime=0;v.muted=true};
+    // mouseover/out bubble from the pill and the clip, so moving between the two does not stop it
+    el.addEventListener("mouseover",start);
+    el.addEventListener("mouseout",e=>{if(!el.contains(e.relatedTarget))stop()});
+    el.addEventListener("click",()=>{v.paused?start():stop()});   // touch screens have no hover
+    wrap.appendChild(el);
+  }
+  /* Always hang below the line end: the space under the last-placed line is empty, whereas
+     everything above it is other players' lines and their end labels. When the line sits too
+     low to fit, slide up only as far as the chart's bottom edge rather than flipping over. */
+  // convert the card's pixel height into chart units so the clamp stays honest at any size
+  const svgH=$("chart").getBoundingClientRect().height||1;
+  const hUnits=el.offsetHeight/svgH*at.H;
+  const top=Math.min(at.y+8,at.H-hUnits);
+  el.style.left=(at.x/1000*100)+"%";
+  el.style.top=(top/at.H*100)+"%";
+  el.style.transform="translateX(-50%)";
 }
 
 /* ---------- podium ---------- */
