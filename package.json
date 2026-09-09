@@ -1,0 +1,11 @@
+{
+  "name": "judgement-table",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Scorekeeper and (soon) online multiplayer table for Judgement / Kachuful",
+  "scripts": {
+    "dev": "python3 -m http.server 8000",
+    "test": "node --test tests/*.test.js"
+  }
+}

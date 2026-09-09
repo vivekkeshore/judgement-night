@@ -1,0 +1,19 @@
+import {$} from "./dom.js";
+import {G,load} from "./state.js";
+import {renderSetup,initSetup} from "./ui/setup.js";
+import {renderTicker} from "./ui/ticker.js";
+import {initLeaderboard} from "./ui/leaderboard.js";
+import {syncSticky} from "./ui/sticky.js";
+import {placeFigures} from "./ui/strip.js";
+import {showGame,startGame,initManual} from "./modes/manual.js";
+
+addEventListener("resize",()=>{syncSticky();placeFigures()});
+if(document.fonts)document.fonts.ready.then(syncSticky); // display font changes header height
+
+initLeaderboard();
+initSetup(startGame);
+initManual();
+
+/* ---------- boot ---------- */
+load();renderTicker();$("stock").innerHTML='<span class="hd">JDG · market opens when the first round is dealt</span><span class="hd">JDG · market opens when the first round is dealt</span>';delete $("maxc").dataset.touched;$("maxc").value=10;
+if(G&&G.players&&G.cards){showGame()}else{renderSetup()}

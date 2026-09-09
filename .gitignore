@@ -11,3 +11,5 @@
 
 # Local scratch copy of an earlier POC
 concept_poc_copy/
+# Node
+node_modules/
