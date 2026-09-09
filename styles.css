@@ -342,3 +342,23 @@ tfoot td.navy{color:#8FA3FF!important}
 .pcard .sub{color:var(--ink-soft);font-size:13.5px;margin-top:8px;max-width:38ch}
 .pcard svg{position:absolute;right:22px;top:18px;width:74px;height:74px}
 .foot{color:rgba(251,250,246,.5);font-size:11.5px;font-family:var(--mono);margin-top:26px;text-align:center;letter-spacing:.04em}
+
+/* online play — your hand. Trump is ringed in gold so it reads at a glance. */
+.hand{display:flex;gap:6px;flex-wrap:wrap}
+.card{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
+  width:44px;height:62px;border-radius:7px;background:var(--card);border:1px solid var(--card-deep);
+  box-shadow:0 3px 8px rgba(0,0,0,.28);font-family:var(--display);line-height:1;color:var(--ink);
+  user-select:none}
+.card b{font-size:19px;font-weight:700}
+.card i{font-style:normal;font-size:17px;margin-top:2px}
+.card.red{color:var(--ruby)}
+.card.trump{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold-pale),0 3px 8px rgba(0,0,0,.28)}
+.names .nm span{padding-right:4px}
+/* bid buttons live on a light panel, so they cannot use .btn (which is styled
+   for the dark masthead and turns invisible here). A blocked bid must read as
+   blocked rather than simply missing. */
+.bidbtn{min-width:46px;height:40px;border-radius:8px;border:1px solid var(--card-deep);
+  background:#fff;color:var(--ink);font-family:var(--mono);font-size:17px;font-weight:600}
+.bidbtn:hover:not(:disabled){background:var(--gold-pale);border-color:var(--gold)}
+.bidbtn:disabled{background:var(--ruby-pale);border-color:#F2B8BE;color:var(--ruby);
+  cursor:not-allowed;text-decoration:line-through}

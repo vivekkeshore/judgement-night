@@ -1,16 +1,23 @@
-/* The Supabase client, loaded from a CDN so the project keeps its no-build-step
-   promise. Nothing here is imported until online mode is actually chosen, so a
-   player who only ever uses the manual scorekeeper never fetches it. */
+/* The Supabase client, vendored into app/vendor/ so the game depends on no
+   third-party CDN at runtime. It is imported lazily, so a player who only ever
+   uses the manual scorekeeper never downloads it. */
 import { SUPABASE_URL, SUPABASE_ANON_KEY, isConfigured } from "../config.js";
 
-const CDN = "https://esm.sh/@supabase/supabase-js@2";
+const VENDORED = "../vendor/supabase-js.js";
 
 let _client = null;
 
 export async function client() {
   if (_client) return _client;
   if (!isConfigured()) throw new Error("Supabase is not configured yet — fill in app/config.js");
-  const { createClient } = await import(/* @vite-ignore */ CDN);
+  let createClient;
+  try {
+    ({ createClient } = await import(VENDORED));
+  } catch {
+    /* deliberately no CDN fallback: vendoring exists so that a third party
+       being down cannot break the game. Fail with something actionable. */
+    throw new Error("supabase-js is not vendored yet — run: npm run vendor");
+  }
   _client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: { persistSession: true, autoRefreshToken: true },
     realtime: { params: { eventsPerSecond: 10 } },

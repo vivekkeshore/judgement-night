@@ -6,6 +6,7 @@
   "description": "Scorekeeper and (soon) online multiplayer table for Judgement / Kachuful",
   "scripts": {
     "dev": "python3 -m http.server 8000",
-    "test": "node --test tests/*.test.js"
+    "test": "node --test tests/*.test.js",
+    "vendor": "node scripts/vendor-supabase.mjs"
   }
 }

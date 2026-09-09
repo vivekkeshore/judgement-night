@@ -3,8 +3,10 @@
 import { $ } from "../dom.js";
 import { isConfigured } from "../config.js";
 import { signIn, currentUserId } from "../net/supabase.js";
-import { createRoom, joinRoom, leaveRoom, subscribeRoom, lastRoom, forgetRoom } from "../net/room.js";
+import { createRoom, joinRoom, leaveRoom, lastRoom, forgetRoom } from "../net/room.js";
+import { subscribeGame, startGame, placeBid } from "../net/game.js";
 import { showLobby, renderJoinForm, renderSeated, lobbyError, lobbyBusy } from "../ui/lobby.js";
+import { renderPlay } from "../ui/play.js";
 
 let unsubscribe = null;
 let meId = null;
@@ -24,13 +26,30 @@ function notConfigured() {
     <div class="err">app/config.js is empty, so there is nothing to connect to.</div>`;
 }
 
+/* One subscription for the whole table. Which view is shown is decided purely by
+   the server's phase, so every client agrees on what is happening. */
 async function watch(newCode) {
   code = newCode;
   location.hash = code;
   if (unsubscribe) { unsubscribe(); unsubscribe = null; }
-  unsubscribe = await subscribeRoom(code, snap => {
-    renderSeated(snap, meId, { onLeave: doLeave });
+  unsubscribe = await subscribeGame(code, snap => {
+    lobbyBusy(false);
+    if (snap.room.status === "lobby") {
+      renderSeated(snap, meId, { onLeave: doLeave, onDeal: doDeal });
+    } else {
+      renderPlay(snap, meId, { onBid: doBid });
+    }
   });
+}
+
+async function doDeal() {
+  try { lobbyError(""); lobbyBusy(true, "shuffling…"); await startGame(code); }
+  catch (e) { lobbyError(e.message); lobbyBusy(false); }
+}
+
+async function doBid(bid) {
+  try { lobbyError(""); await placeBid(code, bid); }
+  catch (e) { lobbyError(e.message); }
 }
 
 async function doLeave() {

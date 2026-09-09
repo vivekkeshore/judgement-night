@@ -59,7 +59,7 @@ export function renderJoinForm({ name = "", code = "", maxCards = 5 }, { onCreat
 }
 
 /* Seated view: the code to share, and the seats as they fill. */
-export function renderSeated(snap, meId, { onLeave }) {
+export function renderSeated(snap, meId, { onLeave, onDeal }) {
   const { room, seats } = snap;
   const me = seats.find(s => s.player_id === meId);
   const isHost = room.host_id === meId;
@@ -81,7 +81,7 @@ export function renderSeated(snap, meId, { onLeave }) {
                  style="cursor:default${s.connected ? "" : ";opacity:.45"}">
         </div>`).join("")}</div>
       <span class="hint">${enough
-        ? (isHost ? "You're the host — dealing arrives in the next phase." : "Waiting for the host to deal.")
+        ? (isHost ? "You're the host — deal when everyone is seated." : "Waiting for the host to deal.")
         : `Need at least 3 players — ${3 - seats.length} more.`}</span>
     </div>
 
@@ -92,11 +92,14 @@ export function renderSeated(snap, meId, { onLeave }) {
     </div>
 
     <div class="actions">
-      <button class="btn gold" id="btnDeal" disabled title="Dealing arrives in the next phase">Deal the first round</button>
+      <button class="btn gold" id="btnDeal" ${isHost && enough ? "" : "disabled"}
+              title="${isHost ? (enough ? "Shuffle and deal round one" : "Need at least 3 players") : "Only the host can deal"}">Deal the first round</button>
       <button class="btn danger" id="btnLeave">Leave table</button>
     </div>
     <div class="err" id="lobbyErr"></div>
     <div class="hint" id="lobbyStatus"></div>`;
 
   $("btnLeave").onclick = onLeave;
+  const deal = $("btnDeal");
+  if (deal && !deal.disabled) deal.onclick = onDeal;
 }
