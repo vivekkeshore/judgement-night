@@ -13,10 +13,15 @@ export async function client() {
   let createClient;
   try {
     ({ createClient } = await import(VENDORED));
-  } catch {
-    /* deliberately no CDN fallback: vendoring exists so that a third party
-       being down cannot break the game. Fail with something actionable. */
-    throw new Error("supabase-js is not vendored yet — run: npm run vendor");
+  } catch (e) {
+    /* Deliberately no CDN fallback: vendoring exists so that a third party being
+       down cannot break the game. Distinguish "never vendored" from "vendored but
+       broken" — the second happens when the bundle still has its own imports,
+       which the browser resolves against this origin and fails to find. */
+    const missing = /not found|404|Failed to fetch|NetworkError|error loading/i.test(e?.message || "");
+    throw new Error(missing
+      ? "supabase-js is not vendored — run: npm run vendor"
+      : `supabase-js failed to load (${e?.message || e}). If it was vendored from jsDelivr's /+esm, that file is only a stub that imports its dependencies from the CDN. Re-run: npm run vendor`);
   }
   _client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: { persistSession: true, autoRefreshToken: true },
