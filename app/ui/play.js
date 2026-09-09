@@ -37,7 +37,7 @@ export function renderPlay(state, meId, { onBid, onPlay }, mountId = "lobbyBody"
     const bid = bidBy[s.seat];
     const won = wonBy[s.seat] || 0;
     const tot = totals[s.seat];
-    return `<div class="nm" style="${turn ? "outline:2px solid var(--gold)" : ""}">
+    return `<div class="nm" data-seat="${s.seat}" style="${turn ? "outline:2px solid var(--gold)" : ""}">
       <i style="background:${colorFor(s.name, s.seat)}"></i>
       <input type="text" readonly style="cursor:default${s.connected ? "" : ";opacity:.45"}"
              value="${esc(s.name)}${s.player_id === meId ? " (you)" : ""}">

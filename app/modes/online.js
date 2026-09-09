@@ -14,6 +14,7 @@ import { renderStrip, renderFallen, placeFigures } from "../ui/strip.js";
 import { renderLeaderboard } from "../ui/leaderboard.js";
 import { renderChart } from "../ui/chart.js";
 import { renderScoreTable } from "../ui/scoretable.js";
+import { completedTrick, freshDeal, sweepTrick, shuffleCurtain } from "../ui/animations.js";
 import { renderTicker, renderStock } from "../ui/ticker.js";
 import { syncSticky } from "../ui/sticky.js";
 
@@ -24,6 +25,8 @@ let snap = null;          // latest server snapshot
 let ticker = null;        // 1s clock + expiry nudge
 let beat = null;          // presence heartbeat
 let nudging = false;
+let animating = false;   // an animation owns the panel; hold later snapshots
+let queuedSnap = null;
 
 const hashCode = () => (location.hash.match(/^#([A-Za-z0-9]{4})$/) || [])[1]?.toUpperCase() || "";
 
@@ -80,18 +83,50 @@ async function watch(newCode) {
   code = newCode;
   location.hash = code;
   if (unsubscribe) { unsubscribe(); unsubscribe = null; }
-  unsubscribe = await subscribeGame(code, next => {
-    snap = next;
-    lobbyBusy(false);
-    if (next.room.status === "lobby") {
-      showTable(false);
-      renderSeated(next, meId, { onLeave: doLeave, onDeal: doDeal });
-    } else {
-      renderTable(next);
-    }
-  });
+  unsubscribe = await subscribeGame(code, onSnapshot);
   startTimers();
   heartbeat(code);
+}
+
+/* Animations run against the table as it currently stands, before the new
+   snapshot replaces it — the winning cards only exist in the DOM at that point,
+   because the server has already moved on to the next trick. Snapshots that
+   arrive mid-animation are queued rather than dropped, so the table always
+   settles on the latest state. */
+async function onSnapshot(next) {
+  if (animating) { queuedSnap = next; return; }
+
+  const prev = snap;
+  lobbyBusy(false);
+
+  if (next.room.status === "lobby") {
+    snap = next; showTable(false);
+    renderSeated(next, meId, { onLeave: doLeave, onDeal: doDeal });
+    return;
+  }
+
+  const trick = completedTrick(prev, next);
+  const dealt = freshDeal(prev, next);
+  if (!trick && !dealt) { snap = next; renderTable(next); return; }
+
+  animating = true;
+  try {
+    if (trick) {
+      const who = prev.seats.find(s => s.seat === trick.winner);
+      await sweepTrick(trick.winner, who ? who.name : "");
+    }
+    if (dealt) {
+      const r = next.rounds.find(x => x.round === next.room.round);
+      showTable(true);
+      await shuffleCurtain("playpanel", next.room.round + 1, r ? r.cards : 0);
+    }
+  } finally {
+    animating = false;
+    const latest = queuedSnap || next;
+    queuedSnap = null;
+    snap = latest;
+    renderTable(latest);
+  }
 }
 
 /* Once dealing starts, online play moves out of the lobby panel and into the
@@ -159,7 +194,7 @@ async function doLeave() {
   try {
     lobbyBusy(true, "leaving…");
     stopTimers();
-    snap = null;
+    snap = null; queuedSnap = null; animating = false;
     if (unsubscribe) { unsubscribe(); unsubscribe = null; }
     if (code) await leaveRoom(code);
   } catch (e) {
