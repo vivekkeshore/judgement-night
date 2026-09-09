@@ -71,8 +71,14 @@ export async function fetchGame(code) {
     sb.from("bids").select("*").eq("room_id", id).eq("round", room.round).then(unwrap),
     sb.from("bids").select("*").eq("room_id", id).then(unwrap),
     sb.from("hands").select("card,played").eq("room_id", id).eq("round", room.round).then(unwrap),
-    sb.from("plays").select("*").eq("room_id", id).eq("round", room.round)
-      .eq("trick_no", room.trick_no).order("played_at").then(unwrap),
+    /* the round's plays, not just this trick's. The server finishes a trick and
+       advances trick_no in one transaction, so filtering on the live trick_no
+       means the winning card is never fetched at all — the table would jump from
+       three cards to none and nobody would see what took it. The previous round
+       comes too, so the last trick of a round survives the rollover. */
+    sb.from("plays").select("*").eq("room_id", id)
+      .in("round", [Math.max(0, room.round - 1), room.round])
+      .order("played_at").then(unwrap),
     sb.from("tricks").select("*").eq("room_id", id).eq("round", room.round).then(unwrap),
     sb.from("results").select("*").eq("room_id", id).then(unwrap),
     sb.from("events").select("*").eq("room_id", id).order("id").then(unwrap),
@@ -80,6 +86,8 @@ export async function fetchGame(code) {
 
   return {
     room, seats, rounds, bids, allBids, plays, tricks, results, events,
+    /* what is on the table right now, derived rather than fetched */
+    trickPlays: plays.filter(p => p.round === room.round && p.trick_no === room.trick_no),
     round: rounds.find(r => r.round === room.round) || null,
     hand: hand.filter(h => !h.played).map(h => h.card),   // cards still in hand
   };

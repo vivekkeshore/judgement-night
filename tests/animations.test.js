@@ -8,51 +8,62 @@ import { completedTrick, freshDeal } from "../app/ui/animations.js";
 
 const seats = [{ seat: 0 }, { seat: 1 }, { seat: 2 }];
 const round = { round: 0, cards: 3, trump: "H" };
-const at = (over, extra = {}) => ({
-  seats, round,
-  room: { round: 0, trick_no: over, phase: "playing", status: "playing", ...extra },
-  plays: [],
-});
-const full = trickNo => ({
+const TRICK = t => [
+  { round: 0, trick_no: t, seat: 0, card: "5H" },
+  { round: 0, trick_no: t, seat: 1, card: "KH" },
+  { round: 0, trick_no: t, seat: 2, card: "2S" },
+];
+/* the state the client held while the trick was still being played */
+const during = (trickNo, cards = 2) => ({
   seats, round,
   room: { round: 0, trick_no: trickNo, phase: "playing", status: "playing" },
-  plays: [{ seat: 0, card: "5H" }, { seat: 1, card: "KH" }, { seat: 2, card: "2S" }],
+  plays: TRICK(trickNo).slice(0, cards),
+});
+/* the state that arrives once the server has closed the trick: it carries the
+   whole round's plays, including the card that finished it */
+const after = (trickNo, extra = {}) => ({
+  seats, round,
+  room: { round: 0, trick_no: trickNo, phase: "playing", status: "playing", ...extra },
+  plays: TRICK(trickNo - 1),
 });
 
-test("a full trick followed by the next trick is a completed trick", () => {
-  const got = completedTrick(full(0), at(1));
-  assert.ok(got);
+test("the finished trick is taken from the new snapshot, not the old one", () => {
+  // the client only ever saw two cards; the third arrived with the advance
+  const got = completedTrick(during(0, 2), after(1));
+  assert.ok(got, "the trick completed even though the old snapshot was short a card");
+  assert.equal(got.plays.length, 3, "all three cards, including the winning one");
   assert.equal(got.winner, 1, "the king of trumps took it");
-  assert.equal(got.plays.length, 3);
 });
 
 test("the last trick of a round counts, even though the round has moved on", () => {
-  // the server deals the next round in the same step, so trick_no resets to 0
-  const next = { seats, round, room: { round: 1, trick_no: 0, phase: "bidding", status: "playing" }, plays: [] };
-  const got = completedTrick(full(2), next);
+  const next = { seats, round, plays: TRICK(2),
+    room: { round: 1, trick_no: 0, phase: "bidding", status: "playing" } };
+  const got = completedTrick(during(2, 2), next);
   assert.ok(got, "a round rollover must still show who took the final trick");
   assert.equal(got.winner, 1);
 });
 
-test("a part-played trick is not a completed trick", () => {
-  const half = { seats, round, room: { round: 0, trick_no: 0, phase: "playing", status: "playing" },
-                 plays: [{ seat: 0, card: "5H" }] };
-  assert.equal(completedTrick(half, at(0)), null);
+test("a trick that has not actually closed is not animated", () => {
+  // trick_no advanced but the new snapshot is missing a card: refuse
+  const short = { seats, round, plays: TRICK(0).slice(0, 2),
+    room: { round: 0, trick_no: 1, phase: "playing", status: "playing" } };
+  assert.equal(completedTrick(during(0, 2), short), null);
 });
 
 test("nothing moving means nothing to animate", () => {
-  assert.equal(completedTrick(full(0), full(0)), null);
+  assert.equal(completedTrick(during(0, 2), during(0, 2)), null);
+  assert.equal(completedTrick(during(0, 3), during(0, 3)), null);
 });
 
 test("no previous snapshot means no trick to replay", () => {
-  assert.equal(completedTrick(null, at(1)), null);
-  assert.equal(completedTrick(undefined, at(1)), null);
+  assert.equal(completedTrick(null, after(1)), null);
+  assert.equal(completedTrick(undefined, after(1)), null);
 });
 
 test("bidding is not trick play", () => {
   const bidding = { seats, round, plays: [],
     room: { round: 0, trick_no: 0, phase: "bidding", status: "playing" } };
-  assert.equal(completedTrick(bidding, at(0)), null);
+  assert.equal(completedTrick(bidding, after(1)), null);
 });
 
 test("freshDeal fires on a new round and on the first deal", () => {

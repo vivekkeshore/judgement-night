@@ -15,16 +15,25 @@ export const TRICK_MS   = 2000;
 
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
-/* Did a full trick just finish? Returns its cards and winner, or null. */
+/* Did a full trick just finish? Returns its cards and winner, or null.
+
+   The finished trick's cards are read from the NEW snapshot, not the old one:
+   the server completes a trick and advances trick_no in the same transaction,
+   so the last card only ever arrives alongside the advance. The old snapshot
+   has one card too few. */
 export function completedTrick(prev, next) {
-  if (!prev || !prev.round || !prev.plays) return null;
-  if (prev.room.phase !== "playing") return null;
-  if (prev.plays.length !== prev.seats.length) return null;      // not a full trick
-  const moved = next.room.trick_no !== prev.room.trick_no
-             || next.room.round !== prev.room.round
-             || next.room.phase !== prev.room.phase;
-  if (!moved) return null;
-  return { plays: prev.plays, winner: trickWinner(prev.plays, prev.round.trump) };
+  if (!prev || !prev.round || prev.room.phase !== "playing") return null;
+
+  const sameRound = next.room.round === prev.room.round;
+  const advanced  = sameRound && next.room.trick_no > prev.room.trick_no;
+  const rolledOver = next.room.round > prev.room.round;
+  if (!advanced && !rolledOver) return null;
+
+  const plays = (next.plays || []).filter(
+    p => p.round === prev.room.round && p.trick_no === prev.room.trick_no);
+  if (plays.length !== prev.seats.length) return null;   // not actually complete
+
+  return { plays, winner: trickWinner(plays, prev.round.trump) };
 }
 
 /* Was a fresh round just dealt? */

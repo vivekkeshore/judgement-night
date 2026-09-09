@@ -15,7 +15,8 @@ const cardHtml = (c, { trump, extra = "", attrs = "" }) =>
      <b>${c[0] === "T" ? "10" : c[0]}</b><i>${GLYPH[suitOf(c)]}</i></span>`;
 
 export function renderPlay(state, meId, { onBid, onPlay, onLeave, onRestart }, mountId = "lobbyBody") {
-  const { room, seats, round, bids, hand, plays = [], tricks = [], results = [] } = state;
+  const { room, seats, round, bids, hand, trickPlays = [], tricks = [], results = [] } = state;
+  const plays = trickPlays;   // only the trick on the table
   const me = seats.find(s => s.player_id === meId);
   const n = seats.length;
   const trump = round ? round.trump : trumpOf(room.round);

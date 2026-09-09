@@ -112,7 +112,12 @@ async function onSnapshot(next) {
   animating = true;
   try {
     if (trick) {
-      const who = prev.seats.find(s => s.seat === trick.winner);
+      /* Put the finished trick on the table first. The winning card has never
+         been rendered — it arrived in the same update that cleared the trick —
+         so without this the sweep would animate one card too few, and nobody
+         would ever see what actually took the trick. */
+      renderTable({ ...next, trickPlays: trick.plays });
+      const who = next.seats.find(s => s.seat === trick.winner);
       await sweepTrick(trick.winner, who ? who.name : "");
     }
     if (dealt) {
