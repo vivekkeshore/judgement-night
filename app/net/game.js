@@ -32,6 +32,13 @@ export async function placeBid(code, bid) {
   unwrap(await sb.rpc("place_bid", { p_code: code, p_bid: bid }));
 }
 
+/* Clear a finished (or abandoned) game and put the room back in the lobby,
+   keeping the seats so the same players can deal again on the same code. */
+export async function restartGame(code) {
+  const sb = await client();
+  unwrap(await sb.rpc("restart_game", { p_code: code }));
+}
+
 export async function playCard(code, card) {
   const sb = await client();
   unwrap(await sb.rpc("play_card", { p_code: code, p_card: card }));

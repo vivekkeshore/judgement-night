@@ -477,3 +477,13 @@ tfoot td.navy{color:#8FA3FF!important}
 @media(prefers-reduced-motion:reduce){
   .trickcard.taking,.shuffle .back,.winbanner,.shuffletext,.names .nm.tookit{animation:none!important}
 }
+
+/* buttons on the light panels. .btn is styled for the dark masthead and turns
+   invisible here, which has caught me out once already. */
+.panelbtn{padding:10px 16px;border-radius:9px;border:1px solid var(--card-deep);
+  background:#fff;color:var(--ink);font-weight:600;font-size:13.5px}
+.panelbtn:hover{background:var(--gold-pale);border-color:var(--gold)}
+.panelbtn.gold{background:var(--gold);border-color:var(--gold-deep);color:var(--ink)}
+.panelbtn.gold:hover{background:#E6B65A}
+.panelbtn.danger{color:var(--ruby);border-color:#F2B8BE}
+.panelbtn.danger:hover{background:var(--ruby-pale);border-color:var(--ruby)}

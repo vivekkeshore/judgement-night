@@ -4,7 +4,7 @@ import { $ } from "../dom.js";
 import { isConfigured } from "../config.js";
 import { signIn, currentUserId } from "../net/supabase.js";
 import { createRoom, joinRoom, leaveRoom, lastRoom, forgetRoom } from "../net/room.js";
-import { subscribeGame, startGame, placeBid, playCard, nudge, heartbeat } from "../net/game.js";
+import { subscribeGame, startGame, placeBid, playCard, nudge, heartbeat, restartGame } from "../net/game.js";
 import { showLobby, renderJoinForm, renderSeated, lobbyError, lobbyBusy } from "../ui/lobby.js";
 import { renderPlay } from "../ui/play.js";
 import { setG } from "../state.js";
@@ -170,7 +170,7 @@ function renderTable(next) {
     + `<br>Table <b>${next.room.code}</b>`;
 
   renderScoreTable(next);
-  renderPlay(next, meId, { onBid: doBid, onPlay: doPlay }, "playpanel");
+  renderPlay(next, meId, { onBid: doBid, onPlay: doPlay, onLeave: doLeave, onRestart: doRestart }, "playpanel");
   syncSticky();
   placeFigures();
 }
@@ -183,6 +183,13 @@ async function doDeal() {
 async function doBid(bid) {
   try { lobbyError(""); await placeBid(code, bid); }
   catch (e) { lobbyError(e.message); }
+}
+
+async function doRestart() {
+  try {
+    lobbyError(""); lobbyBusy(true, "clearing the table…");
+    await restartGame(code);          // back to the lobby, seats kept
+  } catch (e) { lobbyError(e.message); lobbyBusy(false); }
 }
 
 async function doPlay(card) {

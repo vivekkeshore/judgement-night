@@ -14,7 +14,7 @@ const cardHtml = (c, { trump, extra = "", attrs = "" }) =>
   `<span class="card${isRed(suitOf(c)) ? " red" : ""}${suitOf(c) === trump ? " trump" : ""}${extra}" ${attrs}>
      <b>${c[0] === "T" ? "10" : c[0]}</b><i>${GLYPH[suitOf(c)]}</i></span>`;
 
-export function renderPlay(state, meId, { onBid, onPlay }, mountId = "lobbyBody") {
+export function renderPlay(state, meId, { onBid, onPlay, onLeave, onRestart }, mountId = "lobbyBody") {
   const { room, seats, round, bids, hand, plays = [], tricks = [], results = [] } = state;
   const me = seats.find(s => s.player_id === meId);
   const n = seats.length;
@@ -27,6 +27,9 @@ export function renderPlay(state, meId, { onBid, onPlay }, mountId = "lobbyBody"
   const bidding = room.phase === "bidding";
   const myTurn = Boolean(me) && room.turn_seat === me.seat && !over;
   const onTurn = seats.find(s => s.seat === room.turn_seat);
+  const isHost = Boolean(me) && room.host_id === me.player_id;
+  const hostSeat = seats.find(s => s.player_id === room.host_id);
+  const hostName = hostSeat ? hostSeat.name : "the host";
 
   /* what was led, and therefore which of my cards are legal right now */
   const ledSuit = plays.length ? suitOf(plays[0].card) : null;
@@ -119,12 +122,24 @@ export function renderPlay(state, meId, { onBid, onPlay }, mountId = "lobbyBody"
       <span class="hint">Only you can see these. Trump is ${GLYPH[trump]} ${trumpName} — those cards are marked.</span>
     </div>`}
 
+    <div class="actions" style="margin-top:20px;padding-top:16px;border-top:1px solid var(--card-shade)">
+      ${over && isHost ? `<button class="panelbtn gold" id="btnAgain">Play again with these players</button>` : ""}
+      <button class="panelbtn danger" id="btnLeaveGame">${over ? "Leave table" : "Leave this table"}</button>
+      ${over && !isHost ? `<span class="hint" style="align-self:center">Only ${esc(hostName)} can start another game.</span>` : ""}
+      ${!over ? `<span class="hint" style="align-self:center">Your seat is kept — you can rejoin with the code.</span>` : ""}
+    </div>
+
     <div class="err" id="lobbyErr"></div>
     <div class="hint" id="lobbyStatus"></div>`;
 
   $(mountId).querySelectorAll("button[data-bid]").forEach(b => {
     b.onclick = () => onBid(Number(b.dataset.bid));
   });
+  const again = document.getElementById("btnAgain");
+  if (again && onRestart) again.onclick = onRestart;
+  const leave = document.getElementById("btnLeaveGame");
+  if (leave && onLeave) leave.onclick = onLeave;
+
   $(mountId).querySelectorAll("[data-card]").forEach(el => {
     el.onclick = () => onPlay(el.dataset.card);
     el.onkeydown = e => {
