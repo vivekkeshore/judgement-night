@@ -122,3 +122,10 @@ export function autoCard(hand, ledSuit) {
   if (!legal.length) return null;
   return legal.reduce((low, c) => (rankValue(c) < rankValue(low) ? c : low));
 }
+
+/* The opening hand: as many as the deck allows, but capped. Without the cap a
+   three-player table gets 17 cards each, and since the schedule runs down to one
+   and back up that is 34 rounds — a couple of hours. Mirrored by start_game in
+   migration 0007. */
+export const MAX_HAND = 10;
+export const handSize = players => Math.min(MAX_HAND, maxDealable(players));

@@ -1,7 +1,7 @@
 /* The online lobby: create or join a table, then watch the seats fill up live.
    Pure rendering plus callbacks — all network work lives in app/net/room.js. */
 import { $ } from "../dom.js";
-import { colorFor, maxDealable, cardsPerRound } from "../../shared/rules.js";
+import { colorFor, handSize, cardsPerRound } from "../../shared/rules.js";
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
 
@@ -24,10 +24,11 @@ export function lobbyBusy(on, label) {
 }
 
 /* Not-yet-in-a-room view: pick a name, then start a table or join one. */
-/* One deck, so the hand size is not really a choice: floor(52 / players). The
-   organiser picks the table size and sees what that implies before committing. */
+/* One deck, so the hand size is not really a choice: floor(52 / players), capped
+   at ten so a small table is not a two-hour game. The organiser picks the table
+   size and sees what that implies before committing. */
 const shapeFor = players => {
-  const cards = maxDealable(players);
+  const cards = handSize(players);
   return { cards, rounds: cardsPerRound(cards).length };
 };
 
