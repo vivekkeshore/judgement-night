@@ -58,19 +58,21 @@ export async function fetchGame(code) {
   if (!room) return null;
   const id = room.id;
 
-  const [seats, rounds, bids, hand, plays, tricks, results] = await Promise.all([
+  const [seats, rounds, bids, allBids, hand, plays, tricks, results, events] = await Promise.all([
     sb.from("seats").select("*").eq("room_id", id).order("seat").then(unwrap),
     sb.from("rounds").select("*").eq("room_id", id).order("round").then(unwrap),
     sb.from("bids").select("*").eq("room_id", id).eq("round", room.round).then(unwrap),
+    sb.from("bids").select("*").eq("room_id", id).then(unwrap),
     sb.from("hands").select("card,played").eq("room_id", id).eq("round", room.round).then(unwrap),
     sb.from("plays").select("*").eq("room_id", id).eq("round", room.round)
       .eq("trick_no", room.trick_no).order("played_at").then(unwrap),
     sb.from("tricks").select("*").eq("room_id", id).eq("round", room.round).then(unwrap),
     sb.from("results").select("*").eq("room_id", id).then(unwrap),
+    sb.from("events").select("*").eq("room_id", id).order("id").then(unwrap),
   ]);
 
   return {
-    room, seats, rounds, bids, plays, tricks, results,
+    room, seats, rounds, bids, allBids, plays, tricks, results, events,
     round: rounds.find(r => r.round === room.round) || null,
     hand: hand.filter(h => !h.played).map(h => h.card),   // cards still in hand
   };
@@ -104,6 +106,7 @@ export async function subscribeGame(code, onSnapshot) {
     .on("postgres_changes", { event: "*", schema: "public", table: "plays",   filter: f }, refresh)
     .on("postgres_changes", { event: "*", schema: "public", table: "tricks",  filter: f }, refresh)
     .on("postgres_changes", { event: "*", schema: "public", table: "results", filter: f }, refresh)
+    .on("postgres_changes", { event: "*", schema: "public", table: "events",  filter: f }, refresh)
     .subscribe();
 
   return () => sb.removeChannel(channel);

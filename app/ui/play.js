@@ -14,7 +14,7 @@ const cardHtml = (c, { trump, extra = "", attrs = "" }) =>
   `<span class="card${isRed(suitOf(c)) ? " red" : ""}${suitOf(c) === trump ? " trump" : ""}${extra}" ${attrs}>
      <b>${c[0] === "T" ? "10" : c[0]}</b><i>${GLYPH[suitOf(c)]}</i></span>`;
 
-export function renderPlay(state, meId, { onBid, onPlay }) {
+export function renderPlay(state, meId, { onBid, onPlay }, mountId = "lobbyBody") {
   const { room, seats, round, bids, hand, plays = [], tricks = [], results = [] } = state;
   const me = seats.find(s => s.player_id === meId);
   const n = seats.length;
@@ -84,7 +84,7 @@ export function renderPlay(state, meId, { onBid, onPlay }) {
     });
   }).join("");
 
-  $("lobbyBody").innerHTML = `
+  $(mountId).innerHTML = `
     <div class="plan">
       <span>Round <b>${room.round + 1} of ${state.rounds.length}</b></span>
       <span>Trump <b>${GLYPH[trump]} ${trumpName}</b></span>
@@ -117,10 +117,10 @@ export function renderPlay(state, meId, { onBid, onPlay }) {
     <div class="err" id="lobbyErr"></div>
     <div class="hint" id="lobbyStatus"></div>`;
 
-  $("lobbyBody").querySelectorAll("button[data-bid]").forEach(b => {
+  $(mountId).querySelectorAll("button[data-bid]").forEach(b => {
     b.onclick = () => onBid(Number(b.dataset.bid));
   });
-  $("lobbyBody").querySelectorAll("[data-card]").forEach(el => {
+  $(mountId).querySelectorAll("[data-card]").forEach(el => {
     el.onclick = () => onPlay(el.dataset.card);
     el.onkeydown = e => {
       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPlay(el.dataset.card); }

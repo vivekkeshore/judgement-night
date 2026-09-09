@@ -379,3 +379,8 @@ tfoot td.navy{color:#8FA3FF!important}
 .clock{float:right;font-family:var(--mono);font-size:11px;letter-spacing:.08em;
   color:var(--ink-mute);text-transform:none}
 .clock.urgent{color:var(--ruby);font-weight:600}
+
+/* online play sits where the score table does in manual mode, so it inherits the
+   same sticky strip, leaderboard and chart around it */
+.playpanel{padding:16px 18px 18px}
+.playpanel .field{margin-bottom:16px}

@@ -7,6 +7,14 @@ import { createRoom, joinRoom, leaveRoom, lastRoom, forgetRoom } from "../net/ro
 import { subscribeGame, startGame, placeBid, playCard, nudge, heartbeat } from "../net/game.js";
 import { showLobby, renderJoinForm, renderSeated, lobbyError, lobbyBusy } from "../ui/lobby.js";
 import { renderPlay } from "../ui/play.js";
+import { setG } from "../state.js";
+import { totals, ordered, doneCount, lastCompleteRound, TRUMPS } from "../../shared/rules.js";
+import { snapshotToG, fallenSeatFrom } from "./adapt.js";
+import { renderStrip, renderFallen, placeFigures } from "../ui/strip.js";
+import { renderLeaderboard } from "../ui/leaderboard.js";
+import { renderChart } from "../ui/chart.js";
+import { renderTicker, renderStock } from "../ui/ticker.js";
+import { syncSticky } from "../ui/sticky.js";
 
 let unsubscribe = null;
 let meId = null;
@@ -75,13 +83,58 @@ async function watch(newCode) {
     snap = next;
     lobbyBusy(false);
     if (next.room.status === "lobby") {
+      showTable(false);
       renderSeated(next, meId, { onLeave: doLeave, onDeal: doDeal });
     } else {
-      renderPlay(next, meId, { onBid: doBid, onPlay: doPlay });
+      renderTable(next);
     }
   });
   startTimers();
   heartbeat(code);
+}
+
+/* Once dealing starts, online play moves out of the lobby panel and into the
+   real furniture — the pinned strip, the leaderboard and the chart — so it gets
+   the apsara and the rest for free rather than reimplementing them. */
+function showTable(on) {
+  $("lobby").hidden = on;
+  $("game").hidden = !on;
+  $("actions").hidden = true;      // Edit players / New game belong to manual mode
+  $("tablewrap").hidden = on;      // the editable score table is manual-only
+  $("playpanel").hidden = !on;
+  $("status").hidden = on;
+}
+
+function renderTable(next) {
+  showTable(true);
+  const g = snapshotToG(next);
+  setG(g);                          // the shared UI modules read state from here
+
+  const T = totals(g), ord = ordered(g), scored = doneCount(g);
+  renderStrip(T, scored, ord[0], ord[ord.length - 1]);
+  /* renderStrip moves the apsara and infers a dethroned seat from that move.
+     Override it with the server's own history so every screen agrees, and so a
+     client that joined late or received a batch does not miss a change.
+     The guard is belt and braces: the server picks the leader with the same
+     "highest total, lowest seat wins ties" rule used here, so the seat it
+     records as dethroned should never be the one currently leading — but if
+     they ever did coincide, both figures would land on one card. */
+  const fallen = fallenSeatFrom(next.events);
+  renderFallen(fallen === ord[0].i ? null : fallen);
+  renderLeaderboard(ord, scored);
+  renderTicker(ord, next.room.phase === "game_over");
+  renderStock(lastCompleteRound(g));
+  renderChart();
+  /* the masthead is shared with manual mode, so it would otherwise keep showing
+     whatever an unfinished local game left behind */
+  const t = TRUMPS.find(x => x[3] === (next.round ? next.round.trump : "H")) || TRUMPS[0];
+  $("meta").innerHTML = `${next.seats.length} players · ${next.rounds.length} rounds`
+    + `<br>Round <b>${next.room.round + 1} / ${next.rounds.length}</b> · Trump <b>${t[0]} ${t[1]}</b>`
+    + `<br>Table <b>${next.room.code}</b>`;
+
+  renderPlay(next, meId, { onBid: doBid, onPlay: doPlay }, "playpanel");
+  syncSticky();
+  placeFigures();
 }
 
 async function doDeal() {
@@ -111,6 +164,7 @@ async function doLeave() {
   } finally {
     code = null;
     location.hash = "";
+    showTable(false);
     forgetRoom();
     lobbyBusy(false);
     await showJoinForm();
