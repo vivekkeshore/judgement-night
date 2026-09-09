@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { legalPlays, trickWinner, roundPoints, suitOf } from "../shared/rules.js";
+import { legalPlays, trickWinner, roundPoints, suitOf, autoBid, autoCard } from "../shared/rules.js";
 
 /* These cases are the reference for BOTH implementations: the plpgsql in
    migration 0003 that actually enforces the rules, and the JS above that greys
@@ -84,4 +84,32 @@ test("a full trick uses every seat exactly once", () => {
   const plays = [{ seat: 0, card: "5S" }, { seat: 1, card: "KS" }, { seat: 2, card: "9S" }];
   assert.equal(new Set(plays.map(p => p.seat)).size, plays.length);
   assert.ok(plays.every(p => suitOf(p.card).length === 1));
+});
+
+/* auto-play: the reference for auto_move() in migration 0004 */
+
+test("autoBid bids nothing when nothing is allowed", () => {
+  assert.equal(autoBid(5, false, {}), 0);
+  assert.equal(autoBid(5, true, { 0: 1, 1: 1 }), 0, "0 is fine here: 1+1+0 is not 5");
+});
+
+test("autoBid bids one when zero is the banned value", () => {
+  // 3 cards, others bid 1+2 = 3, so bidding 0 would make the total exactly 3
+  assert.equal(autoBid(3, true, { 0: 1, 1: 2 }), 1);
+});
+
+test("autoBid stays legal in a one-card round", () => {
+  // 1 card, the other player bid 1: bidding 0 would total exactly 1, so 0 is
+  // banned and the only other option is 1 — which totals 2 and is fine
+  assert.equal(autoBid(1, true, { 0: 1 }), 1);
+  // and when nothing is banned it still prefers zero
+  assert.equal(autoBid(1, true, { 0: 0 }), 0);
+});
+
+test("autoCard plays the lowest legal card, following suit when it must", () => {
+  const hand = ["AS", "3S", "2H", "7D"];
+  assert.equal(autoCard(hand, "S"), "3S", "must follow spades, so the low spade");
+  assert.equal(autoCard(hand, null), "2H", "leading, so the lowest card overall");
+  assert.equal(autoCard(hand, "C"), "2H", "cannot follow clubs, so the lowest of anything");
+  assert.equal(autoCard([], "S"), null);
 });

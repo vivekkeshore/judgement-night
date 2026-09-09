@@ -374,3 +374,8 @@ tfoot td.navy{color:#8FA3FF!important}
 .names .nm .tally{font-family:var(--mono);font-weight:600;font-size:13px;
   min-width:3em;text-align:right;color:var(--ink-soft)}
 .names .nm .tally.total{min-width:3.2em;color:var(--ink)}
+/* the turn clock, updated in place by a ticker so the view is not re-rendered
+   every second (which would reset hover and focus) */
+.clock{float:right;font-family:var(--mono);font-size:11px;letter-spacing:.08em;
+  color:var(--ink-mute);text-transform:none}
+.clock.urgent{color:var(--ruby);font-weight:600}

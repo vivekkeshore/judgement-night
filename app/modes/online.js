@@ -4,13 +4,17 @@ import { $ } from "../dom.js";
 import { isConfigured } from "../config.js";
 import { signIn, currentUserId } from "../net/supabase.js";
 import { createRoom, joinRoom, leaveRoom, lastRoom, forgetRoom } from "../net/room.js";
-import { subscribeGame, startGame, placeBid, playCard } from "../net/game.js";
+import { subscribeGame, startGame, placeBid, playCard, nudge, heartbeat } from "../net/game.js";
 import { showLobby, renderJoinForm, renderSeated, lobbyError, lobbyBusy } from "../ui/lobby.js";
 import { renderPlay } from "../ui/play.js";
 
 let unsubscribe = null;
 let meId = null;
 let code = null;
+let snap = null;          // latest server snapshot
+let ticker = null;        // 1s clock + expiry nudge
+let beat = null;          // presence heartbeat
+let nudging = false;
 
 const hashCode = () => (location.hash.match(/^#([A-Za-z0-9]{4})$/) || [])[1]?.toUpperCase() || "";
 
@@ -26,20 +30,58 @@ function notConfigured() {
     <div class="err">app/config.js is empty, so there is nothing to connect to.</div>`;
 }
 
+/* The clock is redrawn every second in place rather than by re-rendering the
+   view, which would reset hover and focus mid-turn. When it runs out, whoever
+   notices tells the server; the server re-checks the deadline itself, so this
+   cannot be used to hurry anyone. The stagger keeps three browsers from all
+   firing the same nudge at the same instant. */
+function stopTimers() {
+  clearInterval(ticker); ticker = null;
+  clearInterval(beat);   beat = null;
+}
+
+function startTimers() {
+  stopTimers();
+  beat = setInterval(() => { if (code) heartbeat(code); }, 15000);
+  ticker = setInterval(async () => {
+    const el = document.getElementById("clock");
+    if (!snap || !snap.room.deadline || snap.room.phase === "game_over") {
+      if (el) el.textContent = "";
+      return;
+    }
+    const left = Math.ceil((new Date(snap.room.deadline) - Date.now()) / 1000);
+    if (el) {
+      el.textContent = left > 0 ? `${left}s` : "time";
+      el.classList.toggle("urgent", left <= 10);
+    }
+    if (left > 0 || nudging) return;
+
+    const mySeat = snap.seats.find(s => s.player_id === meId)?.seat ?? 0;
+    await new Promise(r => setTimeout(r, 250 * mySeat));   // stagger
+    if (nudging) return;
+    nudging = true;
+    try { await nudge(code); } catch { /* someone else got there first */ }
+    finally { nudging = false; }
+  }, 1000);
+}
+
 /* One subscription for the whole table. Which view is shown is decided purely by
    the server's phase, so every client agrees on what is happening. */
 async function watch(newCode) {
   code = newCode;
   location.hash = code;
   if (unsubscribe) { unsubscribe(); unsubscribe = null; }
-  unsubscribe = await subscribeGame(code, snap => {
+  unsubscribe = await subscribeGame(code, next => {
+    snap = next;
     lobbyBusy(false);
-    if (snap.room.status === "lobby") {
-      renderSeated(snap, meId, { onLeave: doLeave, onDeal: doDeal });
+    if (next.room.status === "lobby") {
+      renderSeated(next, meId, { onLeave: doLeave, onDeal: doDeal });
     } else {
-      renderPlay(snap, meId, { onBid: doBid, onPlay: doPlay });
+      renderPlay(next, meId, { onBid: doBid, onPlay: doPlay });
     }
   });
+  startTimers();
+  heartbeat(code);
 }
 
 async function doDeal() {
@@ -60,6 +102,8 @@ async function doPlay(card) {
 async function doLeave() {
   try {
     lobbyBusy(true, "leaving…");
+    stopTimers();
+    snap = null;
     if (unsubscribe) { unsubscribe(); unsubscribe = null; }
     if (code) await leaveRoom(code);
   } catch (e) {

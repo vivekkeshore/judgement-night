@@ -37,6 +37,19 @@ export async function playCard(code, card) {
   unwrap(await sb.rpc("play_card", { p_code: code, p_card: card }));
 }
 
+/* Tell the server the clock has run out. It re-checks the deadline itself, so
+   this is only a nudge — several clients calling at once is harmless. */
+export async function nudge(code) {
+  const sb = await client();
+  return unwrap(await sb.rpc("nudge", { p_code: code }));
+}
+
+/* Presence: "I am still here", and age out anyone who is not. */
+export async function heartbeat(code) {
+  const sb = await client();
+  try { await sb.rpc("heartbeat", { p_code: code }); } catch { /* not worth surfacing */ }
+}
+
 /* One authoritative snapshot: the room, seats, this round, the bids, the trick
    in progress, tricks won so far, every round's result — and only my own hand. */
 export async function fetchGame(code) {

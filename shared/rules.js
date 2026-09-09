@@ -104,3 +104,21 @@ export function trickWinner(plays, trump) {
 
 /* Exactly the bid, or nothing: the score is the same size either way. */
 export const roundPoints = (bid, tricksWon) => pts(bid, tricksWon === bid);
+
+/* ------------------------------------------------------------- auto-play ----
+   What the server plays for someone whose clock ran out. Mirrored in plpgsql by
+   auto_move() in migration 0004. Deliberately unhelpful: it should keep the
+   table moving, not play an absent player's hand well for them. */
+
+/* Bid nothing — unless nothing is the one bid the last player may not make. */
+export function autoBid(cards, isLastBidder, otherBids) {
+  const banned = isLastBidder ? bannedBid(cards, otherBids) : null;
+  return banned === 0 ? Math.min(1, cards) : 0;
+}
+
+/* The lowest card you are allowed to play. */
+export function autoCard(hand, ledSuit) {
+  const legal = legalPlays(hand, ledSuit);
+  if (!legal.length) return null;
+  return legal.reduce((low, c) => (rankValue(c) < rankValue(low) ? c : low));
+}

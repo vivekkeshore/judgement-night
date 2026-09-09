@@ -96,7 +96,7 @@ export function renderPlay(state, meId, { onBid, onPlay }) {
     <div class="field">
       <label>${over ? "Game over"
         : myTurn ? (bidding ? "Your call" : "Your turn — play a card")
-        : `Waiting for ${esc(onTurn ? onTurn.name : "…")}`}</label>
+        : `Waiting for ${esc(onTurn ? onTurn.name : "…")}`}<span id="clock" class="clock"></span></label>
       <div class="names">${seatRows}</div>
       <span class="hint">tricks won / bid, then running total</span>
     </div>
