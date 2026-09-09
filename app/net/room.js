@@ -21,9 +21,9 @@ const unwrap = ({ data, error }) => {
   return data;
 };
 
-export async function createRoom(name, maxCards) {
+export async function createRoom(name, players) {
   const sb = await client(); await signIn();
-  const code = unwrap(await sb.rpc("create_room", { p_name: name, p_max_cards: maxCards }));
+  const code = unwrap(await sb.rpc("create_room", { p_name: name, p_players: players }));
   rememberRoom(code, name);
   return code;
 }

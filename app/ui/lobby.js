@@ -1,7 +1,7 @@
 /* The online lobby: create or join a table, then watch the seats fill up live.
    Pure rendering plus callbacks — all network work lives in app/net/room.js. */
 import { $ } from "../dom.js";
-import { colorFor } from "../../shared/rules.js";
+import { colorFor, maxDealable, cardsPerRound } from "../../shared/rules.js";
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
 
@@ -24,19 +24,26 @@ export function lobbyBusy(on, label) {
 }
 
 /* Not-yet-in-a-room view: pick a name, then start a table or join one. */
-export function renderJoinForm({ name = "", code = "", maxCards = 5 }, { onCreate, onJoin }) {
+/* One deck, so the hand size is not really a choice: floor(52 / players). The
+   organiser picks the table size and sees what that implies before committing. */
+const shapeFor = players => {
+  const cards = maxDealable(players);
+  return { cards, rounds: cardsPerRound(cards).length };
+};
+
+export function renderJoinForm({ name = "", code = "", players = 4 }, { onCreate, onJoin }) {
   $("lobbyBody").innerHTML = `
     <div class="field">
       <label for="myName">Your name</label>
       <input type="text" id="myName" maxlength="18" autocomplete="nickname" value="${esc(name)}" placeholder="e.g. Vivek" style="max-width:260px">
     </div>
-    <div class="plan"><span>3 to 8 players</span><span>Everyone needs the 4-letter code</span><span>Cards <b>max → 1 → max</b></span></div>
-
     <div class="field">
-      <label for="maxCards">Cards in the first round</label>
-      <input type="number" id="maxCards" min="1" max="17" value="${maxCards}" style="width:120px">
-      <span class="hint">Capped by the deck once everyone has joined.</span>
+      <label for="players">How many are playing?</label>
+      <div class="stepper"><button type="button" id="pDec" aria-label="Fewer players">−</button><output id="players">${players}</output><button type="button" id="pInc" aria-label="More players">+</button></div>
+      <span class="hint">3 to 8. One deck, so this decides the rest.</span>
     </div>
+
+    <div class="plan" id="shape"></div>
     <button class="btn gold" id="btnCreate" style="padding:12px 22px;font-size:15px">Start a new table</button>
 
     <div class="field" style="margin-top:26px">
@@ -51,8 +58,21 @@ export function renderJoinForm({ name = "", code = "", maxCards = 5 }, { onCreat
     <div class="err" id="lobbyErr"></div>
     <div class="hint" id="lobbyStatus"></div>`;
 
+  let count = players;
+  const shape = () => {
+    const s = shapeFor(count);
+    $("players").value = count;
+    $("shape").innerHTML = `<span>Deal <b>${s.cards}</b> cards each</span>`
+      + `<span><b>${s.rounds}</b> rounds</span>`
+      + `<span>${s.cards} → 1 → ${s.cards}</span>`
+      + `<span>Trump <b>♥ ♠ ♦ ♣</b> repeating</span>`;
+  };
+  shape();
+  $("pDec").onclick = () => { count = Math.max(3, count - 1); shape(); };
+  $("pInc").onclick = () => { count = Math.min(8, count + 1); shape(); };
+
   const nameOf = () => $("myName").value.trim();
-  $("btnCreate").onclick = () => onCreate(nameOf(), +$("maxCards").value || 5);
+  $("btnCreate").onclick = () => onCreate(nameOf(), count);
   $("btnJoin").onclick   = () => onJoin(nameOf(), $("joinCode").value.trim().toUpperCase());
   $("joinCode").addEventListener("input", e => { e.target.value = e.target.value.toUpperCase(); });
   $("myName").focus();
@@ -64,6 +84,9 @@ export function renderSeated(snap, meId, { onLeave, onDeal }) {
   const me = seats.find(s => s.player_id === meId);
   const isHost = room.host_id === meId;
   const enough = seats.length >= 3;
+  const missing = Math.max(0, (room.expected_players || seats.length) - seats.length);
+  /* what a deal would actually produce right now, for however many turned up */
+  const dealt = shapeFor(Math.max(3, seats.length));
 
   $("lobbyBody").innerHTML = `
     <div class="field">
@@ -73,21 +96,24 @@ export function renderSeated(snap, meId, { onLeave, onDeal }) {
     </div>
 
     <div class="field">
-      <label>At the table (${seats.length} of 8)</label>
+      <label>At the table (${seats.length} of ${room.expected_players || seats.length})</label>
       <div class="names">${seats.map(s => `
         <div class="nm">
           <i style="background:${colorFor(s.name, s.seat)}"></i>
           <input type="text" value="${esc(s.name)}${s.player_id === meId ? " (you)" : ""}" readonly
                  style="cursor:default${s.connected ? "" : ";opacity:.45"}">
         </div>`).join("")}</div>
-      <span class="hint">${enough
-        ? (isHost ? "You're the host — deal when everyone is seated." : "Waiting for the host to deal.")
-        : `Need at least 3 players — ${3 - seats.length} more.`}</span>
+      <span class="hint">${!enough
+        ? `Need at least 3 players — ${3 - seats.length} more.`
+        : missing > 0
+          ? (isHost ? `Waiting for ${missing} more, or deal now with ${seats.length}.` : `Waiting for ${missing} more.`)
+          : (isHost ? "Everyone is here — deal when ready." : "Waiting for the host to deal.")}</span>
     </div>
 
     <div class="plan">
       <span>Seat <b>${me ? me.seat + 1 : "?"}</b></span>
-      <span>First round <b>${room.max_cards}</b> cards</span>
+      <span>Deal <b>${dealt.cards}</b> cards each</span>
+      <span><b>${dealt.rounds}</b> rounds</span>
       <span>Status <b>${esc(room.status)}</b></span>
     </div>
 

@@ -82,3 +82,23 @@ test("sortHand puts trump first, then other suits, each high to low", () => {
   }
   assert.equal(sortHand([], "H").length, 0);
 });
+
+test("the table size decides the hand size and the game length", () => {
+  // one deck, so the most everyone can be dealt is floor(52 / players),
+  // and the schedule is that count down to one and back up
+  const shape = n => {
+    const cards = maxDealable(n);
+    return { cards, rounds: cardsPerRound(cards).length };
+  };
+  assert.deepEqual(shape(3), { cards: 17, rounds: 34 });
+  assert.deepEqual(shape(4), { cards: 13, rounds: 26 });
+  assert.deepEqual(shape(5), { cards: 10, rounds: 20 });
+  assert.deepEqual(shape(6), { cards: 8,  rounds: 16 });
+  assert.deepEqual(shape(7), { cards: 7,  rounds: 14 });
+  assert.deepEqual(shape(8), { cards: 6,  rounds: 12 });
+
+  // fewer players means a longer game, which is worth knowing before starting
+  assert.ok(shape(3).rounds > shape(8).rounds);
+  // and no deal ever needs more than the deck holds
+  for (const n of [3,4,5,6,7,8]) assert.ok(shape(n).cards * n <= 52);
+});

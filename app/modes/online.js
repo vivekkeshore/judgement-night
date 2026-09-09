@@ -224,13 +224,13 @@ async function doLeave() {
 async function showJoinForm() {
   const remembered = lastRoom();
   renderJoinForm(
-    { name: remembered?.name || "", code: hashCode() || "", maxCards: 5 },
+    { name: remembered?.name || "", code: hashCode() || "", players: 4 },
     {
-      onCreate: async (name, maxCards) => {
+      onCreate: async (name, players) => {
         if (!name) return lobbyError("Your name, first.");
         try {
           lobbyError(""); lobbyBusy(true, "setting the table…");
-          await watch(await createRoom(name, maxCards));
+          await watch(await createRoom(name, players));
         } catch (e) { lobbyError(e.message); lobbyBusy(false); }
       },
       onJoin: async (name, joinCode) => {
