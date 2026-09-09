@@ -4,7 +4,7 @@ import { $ } from "../dom.js";
 import { isConfigured } from "../config.js";
 import { signIn, currentUserId } from "../net/supabase.js";
 import { createRoom, joinRoom, leaveRoom, lastRoom, forgetRoom } from "../net/room.js";
-import { subscribeGame, startGame, placeBid } from "../net/game.js";
+import { subscribeGame, startGame, placeBid, playCard } from "../net/game.js";
 import { showLobby, renderJoinForm, renderSeated, lobbyError, lobbyBusy } from "../ui/lobby.js";
 import { renderPlay } from "../ui/play.js";
 
@@ -37,7 +37,7 @@ async function watch(newCode) {
     if (snap.room.status === "lobby") {
       renderSeated(snap, meId, { onLeave: doLeave, onDeal: doDeal });
     } else {
-      renderPlay(snap, meId, { onBid: doBid });
+      renderPlay(snap, meId, { onBid: doBid, onPlay: doPlay });
     }
   });
 }
@@ -49,6 +49,11 @@ async function doDeal() {
 
 async function doBid(bid) {
   try { lobbyError(""); await placeBid(code, bid); }
+  catch (e) { lobbyError(e.message); }
+}
+
+async function doPlay(card) {
+  try { lobbyError(""); await playCard(code, card); }
   catch (e) { lobbyError(e.message); }
 }
 

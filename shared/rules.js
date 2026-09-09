@@ -77,3 +77,30 @@ export function sortHand(hand, trump) {
   return [...hand].sort((a, b) =>
     (order[suitOf(a)] - order[suitOf(b)]) || (rankValue(b) - rankValue(a)));
 }
+
+/* ------------------------------------------------------------ trick play ----
+   These three functions are mirrored in plpgsql (see migration 0003). The SQL
+   copy is authoritative — it is what actually enforces the rules — and this one
+   drives the client's legal-move highlighting. Keep them in step; the tests in
+   tests/tricks.test.js are the reference for both. */
+
+/* You must follow the suit that was led if you hold it; otherwise anything goes,
+   including trumping in. Leading a trick, everything is legal. */
+export function legalPlays(hand, ledSuit) {
+  if (!ledSuit) return [...hand];
+  const following = hand.filter(c => suitOf(c) === ledSuit);
+  return following.length ? following : [...hand];
+}
+
+/* Highest trump wins; with no trump played, the highest card of the led suit
+   wins. Cards of other suits cannot win at all — they were discards. */
+export function trickWinner(plays, trump) {
+  if (!plays.length) return null;
+  const ledSuit = suitOf(plays[0].card);
+  const trumped = plays.filter(p => suitOf(p.card) === trump);
+  const pool = trumped.length ? trumped : plays.filter(p => suitOf(p.card) === ledSuit);
+  return pool.reduce((best, p) => (rankValue(p.card) > rankValue(best.card) ? p : best)).seat;
+}
+
+/* Exactly the bid, or nothing: the score is the same size either way. */
+export const roundPoints = (bid, tricksWon) => pts(bid, tricksWon === bid);
