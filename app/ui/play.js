@@ -41,8 +41,8 @@ export function renderPlay(state, meId, { onBid, onPlay }, mountId = "lobbyBody"
       <i style="background:${colorFor(s.name, s.seat)}"></i>
       <input type="text" readonly style="cursor:default${s.connected ? "" : ";opacity:.45"}"
              value="${esc(s.name)}${s.player_id === meId ? " (you)" : ""}">
-      <span class="tally">${bid === undefined ? (turn && bidding ? "…" : "–") : `${won}/${bid}`}</span>
-      <span class="tally total">${tot === undefined ? "" : fmt(tot)}</span>
+      <span class="tally" title="tricks won of tricks bid">${bid === undefined ? (turn && bidding ? "…" : "–") : `${won} of ${bid}`}</span>
+      <span class="tally total" title="score for the game so far">${tot === undefined ? "" : fmt(tot)}</span>
     </div>`;
   }).join("");
 
@@ -103,7 +103,7 @@ export function renderPlay(state, meId, { onBid, onPlay }, mountId = "lobbyBody"
         : myTurn ? (bidding ? "Your call" : "Your turn — play a card")
         : `Waiting for ${esc(onTurn ? onTurn.name : "…")}`}<span id="clock" class="clock"></span></label>
       <div class="names">${seatRows}</div>
-      <span class="hint">tricks won / bid, then running total</span>
+      <span class="hint">Each row: tricks won so far out of the tricks bid, then that player's score for the game.</span>
     </div>
 
     ${over ? "" : `<div class="field"><label>On the table</label>
@@ -115,7 +115,7 @@ export function renderPlay(state, meId, { onBid, onPlay }, mountId = "lobbyBody"
 
     ${over ? "" : `<div class="field">
       <label>Your hand — ${hand.length} card${hand.length === 1 ? "" : "s"}</label>
-      <div class="hand">${handHtml || '<span class="hint">nothing left</span>'}</div>
+      <div class="hand${hand.length >= 8 ? " big" : ""}">${handHtml || '<span class="hint">nothing left</span>'}</div>
       <span class="hint">Only you can see these. Trump is ${GLYPH[trump]} ${trumpName} — those cards are marked.</span>
     </div>`}
 

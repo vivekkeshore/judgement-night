@@ -364,7 +364,7 @@ tfoot td.navy{color:#8FA3FF!important}
   cursor:not-allowed;text-decoration:line-through}
 
 /* the trick on the table, and which of your cards you may legally play */
-.trick{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;min-height:74px}
+.trick{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end}
 .trickcard{display:flex;flex-direction:column;align-items:center;gap:4px}
 .trickcard .who{font:600 11px/1 var(--mono);letter-spacing:.04em;text-transform:uppercase}
 .card.playable{cursor:pointer;transition:transform .12s ease,box-shadow .12s ease}
@@ -401,7 +401,9 @@ tfoot td.navy{color:#8FA3FF!important}
   border-radius:7px 7px 0 0}
 .card.trump b{margin-top:12px}
 .hand{gap:8px}
-.trick{gap:18px;min-height:104px}
+/* reserve the height a played card will need, so the panel does not jump when
+   the first one lands */
+.trick{gap:18px;min-height:calc(var(--cardw) * 1.42 + 20px)}
 
 /* the trump of the round, called out rather than buried in the strip */
 .trumpcall{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:9px;
@@ -417,3 +419,15 @@ tfoot td.navy{color:#8FA3FF!important}
 #scoretable td.won{color:var(--good);font-weight:600}
 #scoretable td.missed{color:var(--ruby);font-weight:600}
 #scoretable tbody tr.pending td{opacity:.45}
+
+/* ---------------------------------------------------- card size, take two ----
+   One knob. A ten-card opening hand at full size would be ~900px wide and wrap
+   awkwardly, so hands of eight or more step down a size rather than overflowing. */
+:root{--cardw:80px}
+.card{width:var(--cardw);height:calc(var(--cardw) * 1.42);border-radius:10px}
+.card b{font-size:calc(var(--cardw) * .44)}
+.card i{font-size:calc(var(--cardw) * .38)}
+.card.trump::after{font-size:calc(var(--cardw) * .115);line-height:1.9}
+.card.trump b{margin-top:calc(var(--cardw) * .17)}
+.hand.big{--cardw:60px}
+.names .nm .tally{min-width:4.2em}
