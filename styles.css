@@ -384,3 +384,36 @@ tfoot td.navy{color:#8FA3FF!important}
    same sticky strip, leaderboard and chart around it */
 .playpanel{padding:16px 18px 18px}
 .playpanel .field{margin-bottom:16px}
+
+/* ---------------------------------------------------------- bigger cards ----
+   Playing cards were sized for a thumbnail strip; at the table they need to be
+   readable at a glance, and the trump has to be obvious without hunting. */
+.card{width:62px;height:88px;border-radius:9px;gap:2px}
+.card b{font-size:27px}
+.card i{font-size:24px;margin-top:3px}
+.card.red{color:var(--ruby)}
+/* a trump card is ringed AND labelled — the ring alone reads as "selected" */
+.card.trump{position:relative;border-color:var(--gold);
+  box-shadow:0 0 0 2px var(--gold-pale),0 3px 8px rgba(0,0,0,.28)}
+.card.trump::after{content:"TRUMP";position:absolute;top:0;left:0;right:0;
+  font:700 7.5px/1.9 var(--mono);letter-spacing:.1em;text-align:center;
+  color:#3A1206;background:linear-gradient(var(--gold),#C9922E);
+  border-radius:7px 7px 0 0}
+.card.trump b{margin-top:12px}
+.hand{gap:8px}
+.trick{gap:18px;min-height:104px}
+
+/* the trump of the round, called out rather than buried in the strip */
+.trumpcall{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:9px;
+  background:var(--gold-pale);border:1px solid var(--gold);font-family:var(--display);
+  font-weight:700;font-size:17px;color:var(--ink)}
+.trumpcall .pip{font-size:24px;line-height:1}
+.trumpcall.red .pip,.trumpcall.red b{color:var(--ruby)}
+.trumpcall.blk .pip,.trumpcall.blk b{color:var(--ink)}
+.trumpcall small{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-mute);font-weight:600}
+
+/* online score table: tricks won reads against the bid beside it */
+#scoretable td.won{color:var(--good);font-weight:600}
+#scoretable td.missed{color:var(--ruby);font-weight:600}
+#scoretable tbody tr.pending td{opacity:.45}

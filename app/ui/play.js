@@ -85,12 +85,17 @@ export function renderPlay(state, meId, { onBid, onPlay }, mountId = "lobbyBody"
   }).join("");
 
   $(mountId).innerHTML = `
-    <div class="plan">
-      <span>Round <b>${room.round + 1} of ${state.rounds.length}</b></span>
-      <span>Trump <b>${GLYPH[trump]} ${trumpName}</b></span>
-      <span>Cards <b>${round ? round.cards : "?"}</b></span>
-      ${over ? "" : `<span>Trick <b>${room.trick_no + 1}</b></span>`}
-      <span>Table <b>${esc(room.code)}</b></span>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px">
+      <span class="trumpcall ${isRed(trump) ? "red" : "blk"}">
+        <span class="pip">${GLYPH[trump]}</span>
+        <span><small>trump</small><br><b>${trumpName}</b></span>
+      </span>
+      <div class="plan" style="margin:0">
+        <span>Round <b>${room.round + 1} of ${state.rounds.length}</b></span>
+        <span>Cards <b>${round ? round.cards : "?"}</b></span>
+        ${over ? "" : `<span>Trick <b>${room.trick_no + 1}</b></span>`}
+        <span>Table <b>${esc(room.code)}</b></span>
+      </div>
     </div>
 
     <div class="field">
@@ -111,7 +116,7 @@ export function renderPlay(state, meId, { onBid, onPlay }, mountId = "lobbyBody"
     ${over ? "" : `<div class="field">
       <label>Your hand — ${hand.length} card${hand.length === 1 ? "" : "s"}</label>
       <div class="hand">${handHtml || '<span class="hint">nothing left</span>'}</div>
-      <span class="hint">Only you can see these.</span>
+      <span class="hint">Only you can see these. Trump is ${GLYPH[trump]} ${trumpName} — those cards are marked.</span>
     </div>`}
 
     <div class="err" id="lobbyErr"></div>

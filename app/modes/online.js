@@ -13,6 +13,7 @@ import { snapshotToG, fallenSeatFrom } from "./adapt.js";
 import { renderStrip, renderFallen, placeFigures } from "../ui/strip.js";
 import { renderLeaderboard } from "../ui/leaderboard.js";
 import { renderChart } from "../ui/chart.js";
+import { renderScoreTable } from "../ui/scoretable.js";
 import { renderTicker, renderStock } from "../ui/ticker.js";
 import { syncSticky } from "../ui/sticky.js";
 
@@ -103,6 +104,7 @@ function showTable(on) {
   $("tablewrap").hidden = on;      // the editable score table is manual-only
   $("playpanel").hidden = !on;
   $("status").hidden = on;
+  $("scoresection").hidden = !on;
 }
 
 function renderTable(next) {
@@ -132,6 +134,7 @@ function renderTable(next) {
     + `<br>Round <b>${next.room.round + 1} / ${next.rounds.length}</b> · Trump <b>${t[0]} ${t[1]}</b>`
     + `<br>Table <b>${next.room.code}</b>`;
 
+  renderScoreTable(next);
   renderPlay(next, meId, { onBid: doBid, onPlay: doPlay }, "playpanel");
   syncSticky();
   placeFigures();
