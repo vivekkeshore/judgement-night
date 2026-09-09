@@ -1,0 +1,15 @@
+# Keep the deployment to just what the browser actually loads.
+# Vercel serves the repo root statically; nothing here is needed at runtime.
+
+# Node's test runner and the test files
+tests/
+
+# Database schema and migrations — applied via the Supabase SQL editor, not served.
+# Harmless if published (it holds no keys), but there's no reason for it to be.
+supabase/
+
+# Local tooling and editor noise
+node_modules/
+.idea/
+.DS_Store
+concept_poc_copy/
