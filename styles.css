@@ -487,3 +487,95 @@ tfoot td.navy{color:#8FA3FF!important}
 .panelbtn.gold:hover{background:#E6B65A}
 .panelbtn.danger{color:var(--ruby);border-color:#F2B8BE}
 .panelbtn.danger:hover{background:var(--ruby-pale);border-color:var(--ruby)}
+
+/* ============================================================ small screens ==
+   Measured on a 390px phone before this block: the page scrolled sideways by
+   81px, and the pinned ticker + masthead + strip came to 273px — a third of the
+   screen gone before any of the game showed. The fixes are mostly about giving
+   that height back. */
+@media(max-width:700px){
+  .wrap{padding:0 12px 60px}
+
+  /* Nothing pins. On a laptop the sticky bands are a nice touch; on a phone they
+     are most of the viewport, and the game is what people came for. */
+  .mast{position:static;padding:14px 0 10px}
+  .strip{position:static}
+  .tablewrap{max-height:none}
+
+  .mast h1{font-size:clamp(26px,8vw,34px)}
+  .mast{gap:8px}
+  .mast .meta{text-align:left;font-size:10.5px;line-height:1.7}
+
+  /* five cards across 390px left the last player off-screen entirely; wrap
+     instead of squeezing */
+  .strip{grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:6px;padding:8px 0 10px}
+  .strip .pp{padding:6px 8px;border-top-width:4px}
+  .strip .pp .n{font-size:12.5px}
+  .strip .pp .v{font-size:19px}
+
+  /* The apsara and the dethroned king overflow upward out of the strip, which on
+     a phone means straight across the title. There is no headroom to give them,
+     so they sit this one out. */
+  .fig{display:none}
+
+  .setup{margin:16px auto;padding:20px 16px;border-radius:12px}
+  .setup h2{font-size:28px}
+  .playpanel{padding:14px 12px 16px}
+  .section h2{font-size:18px}
+  .chartpanel{padding:10px 8px 4px}
+  .lb{padding:10px 10px 8px}
+  .lb h3{font-size:17px}
+
+  /* a ten-card hand was three rows deep at 60px */
+  .hand{--cardw:50px;gap:5px}
+  .hand.big{--cardw:44px}
+  .trick{--cardw:56px;gap:10px;min-height:calc(56px * 1.42 + 20px)}
+  .trumpcall{padding:5px 10px;font-size:15px}
+  .trumpcall .pip{font-size:20px}
+
+  /* the score table still scrolls inside its panel, but less of it has to */
+  #scoretable{min-width:480px;font-size:12px}
+  #scoretable thead th{padding:6px 4px;font-size:9.5px}
+  #scoretable tbody td{padding:6px 4px}
+  #scoretable td.trump{width:auto;font-size:11px}
+  #scoretable tfoot td{font-size:15px;padding:8px 4px}
+
+  /* On a phone the hand ended up ~930px down the page — a full screen of
+     scrolling on every turn. What you actually need is the trick and your own
+     cards; the seat list is reference material, so it moves below them. */
+  .playpanel{display:flex;flex-direction:column}
+  .playpanel .f-head  {order:0}
+  .playpanel .f-trick {order:1}
+  .playpanel .f-action{order:2}
+  .playpanel .f-hand  {order:3}
+  .playpanel .f-seats {order:4}
+  .playpanel .actions {order:5}
+  .playpanel .err,.playpanel .hint{order:6}
+
+  /* the seat list is reference material; compacting it brings the hand roughly
+     a hundred pixels closer, which matters when you scroll to it every turn */
+  .names{gap:6px}
+  .names .nm{padding:4px 8px 4px 4px;gap:6px}
+  .names .nm i{width:10px;height:26px}
+  .names .nm input{font-size:14px;padding:3px 2px}
+  .names .nm .tally{font-size:12px;min-width:3.4em}
+  .names .nm .tally.total{min-width:2.8em}
+
+  /* Manual mode's table keeps its pinned Rd/Trump/Status columns — they are what
+     make sideways scrolling legible — but at full width they took ~200px of a
+     390px screen, leaving almost nothing to actually scroll. */
+  #table td.rnd,#table th.rd{width:26px}
+  #table td.trump{width:74px;font-size:11px;white-space:normal;line-height:1.25}
+  #table td.cards{width:32px}
+  #table td.done,#table th.st{width:74px}
+  #table .donebtn{width:66px;height:30px;font-size:8.5px;letter-spacing:.03em}
+  #table td.bid input{width:44px;height:34px;font-size:15px}
+  #table .res{width:34px;height:34px;font-size:15px}
+  #table thead th{font-size:9px;padding:6px 3px}
+  #table tbody td{padding:6px 3px}
+  #table tfoot td{font-size:15px;padding:8px 3px}
+
+  .bidbtn{min-width:42px;height:38px;font-size:16px}
+  .panelbtn{width:100%;text-align:center}
+  .actions{gap:8px}
+}

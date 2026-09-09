@@ -54,14 +54,14 @@ export function renderPlay(state, meId, { onBid, onPlay, onLeave, onRestart }, m
   if (over) {
     const rank = seats.map(s => ({ ...s, tot: totals[s.seat] || 0 }))
       .sort((a, b) => b.tot - a.tot || a.seat - b.seat);
-    action = `<div class="field"><label>Final</label>
+    action = `<div class="field f-action"><label>Final</label>
       <div class="plan" style="display:block;line-height:2">${rank.map((p, i) =>
         `<div><b>${i === 0 ? "👑" : i === rank.length - 1 ? "🩴" : `${i + 1}.`}</b>
           ${esc(p.name)} <b>${fmt(p.tot)}</b></div>`).join("")}</div></div>`;
   } else if (bidding && myTurn && round) {
     const others = Object.fromEntries(seats.filter(s => s.seat !== me.seat).map(s => [s.seat, bidBy[s.seat] ?? null]));
     const isLast = me.seat === lastBidder(room.round, n);
-    action = `<div class="field"><label>Your bid — how many tricks will you take?</label>
+    action = `<div class="field f-action"><label>Your bid — how many tricks will you take?</label>
       <div style="display:flex;gap:6px;flex-wrap:wrap">${
         Array.from({ length: round.cards + 1 }, (_, b) => {
           const err = bidError({ cards: round.cards, bid: b, isLastBidder: isLast, otherBids: others });
@@ -89,7 +89,7 @@ export function renderPlay(state, meId, { onBid, onPlay, onLeave, onRestart }, m
   }).join("");
 
   $(mountId).innerHTML = `
-    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px">
+    <div class="f-head" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px">
       <span class="trumpcall ${isRed(trump) ? "red" : "blk"}">
         <span class="pip">${GLYPH[trump]}</span>
         <span><small>trump</small><br><b>${trumpName}</b></span>
@@ -102,7 +102,7 @@ export function renderPlay(state, meId, { onBid, onPlay, onLeave, onRestart }, m
       </div>
     </div>
 
-    <div class="field">
+    <div class="field f-seats">
       <label>${over ? "Game over"
         : myTurn ? (bidding ? "Your call" : "Your turn — play a card")
         : `Waiting for ${esc(onTurn ? onTurn.name : "…")}`}<span id="clock" class="clock"></span></label>
@@ -110,14 +110,14 @@ export function renderPlay(state, meId, { onBid, onPlay, onLeave, onRestart }, m
       <span class="hint">Each row: tricks won so far out of the tricks bid, then that player's score for the game.</span>
     </div>
 
-    ${over ? "" : `<div class="field"><label>On the table</label>
+    ${over ? "" : `<div class="field f-trick"><label>On the table</label>
       <div class="trick">${trickHtml}</div>
       ${ledSuit ? `<span class="hint">${GLYPH[ledSuit]} was led — follow it if you can.</span>` : ""}
     </div>`}
 
     ${action}
 
-    ${over ? "" : `<div class="field">
+    ${over ? "" : `<div class="field f-hand">
       <label>Your hand — ${hand.length} card${hand.length === 1 ? "" : "s"}</label>
       <div class="hand${hand.length >= 8 ? " big" : ""}">${handHtml || '<span class="hint">nothing left</span>'}</div>
       <span class="hint">Only you can see these. Trump is ${GLYPH[trump]} ${trumpName} — those cards are marked.</span>
