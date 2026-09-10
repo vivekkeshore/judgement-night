@@ -1,12 +1,12 @@
 import {$} from "../dom.js";
 import {G} from "../state.js";
-import {fmt} from "../../shared/rules.js";
+import {fmtFor} from "../../shared/rules.js";
 
 export function renderStrip(T,scored,first,last){
   const P=G.players;
   const stripEl=$("strip");
   stripEl.style.setProperty("--n",P.length);
-  const cards=P.map((p,i)=>`<div class="pp ${scored>0&&i===first.i?"lead":""} ${i===fallenSeat?"fell":""}" style="--pc:${p.c}"><div class="n">${T[i]===first.tot&&scored>0?"👑 ":""}${p.n}${T[i]===last.tot&&last.tot!==first.tot&&scored>0?" 🩴":""}</div><div class="v ${T[i]<0?'neg':''} ${p.navy?'navy':''}">${fmt(T[i])}</div></div>`).join("");
+  const cards=P.map((p,i)=>`<div class="pp ${scored>0&&i===first.i?"lead":""} ${i===fallenSeat?"fell":""}" style="--pc:${p.c}"><div class="n">${T[i]===first.tot&&scored>0?"👑 ":""}${p.n}${T[i]===last.tot&&last.tot!==first.tot&&scored>0?" 🩴":""}</div><div class="v ${T[i]<0?'neg':''} ${p.navy?'navy':''}">${fmtFor(G,T[i])}</div></div>`).join("");
   // replace only the player cards — the apsara is a sibling and must survive the re-render,
   // or her dance restarts on every keystroke
   stripEl.querySelectorAll(".pp").forEach(n=>n.remove());

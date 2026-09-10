@@ -1,5 +1,7 @@
-/* Online mode: owns the lobby lifecycle — sign in, create or join, subscribe,
-   and keep the seat list live. Card play arrives in the phases after this. */
+/* Online Judgement: owns the lobby lifecycle — sign in, create or join,
+   subscribe, and keep the seat list live — plus the trick table itself.
+   The clock, the heartbeat and the animation gate are shared with Declare and
+   live in modes/table.js. */
 import { $ } from "../dom.js";
 import { isConfigured } from "../config.js";
 import { signIn, currentUserId } from "../net/supabase.js";
@@ -10,6 +12,7 @@ import { renderPlay } from "../ui/play.js";
 import { setG } from "../state.js";
 import { totals, ordered, doneCount, lastCompleteRound, TRUMPS } from "../../shared/rules.js";
 import { snapshotToG, fallenSeatFrom } from "./adapt.js";
+import { hashCode, notConfigured, makeClock, makeGate } from "./table.js";
 import { renderStrip, renderFallen, placeFigures } from "../ui/strip.js";
 import { renderLeaderboard } from "../ui/leaderboard.js";
 import { renderChart } from "../ui/chart.js";
@@ -22,60 +25,14 @@ let unsubscribe = null;
 let meId = null;
 let code = null;
 let snap = null;          // latest server snapshot
-let ticker = null;        // 1s clock + expiry nudge
-let beat = null;          // presence heartbeat
-let nudging = false;
-let animating = false;   // an animation owns the panel; hold later snapshots
-let queuedSnap = null;
 
-const hashCode = () => (location.hash.match(/^#([A-Za-z0-9]{4})$/) || [])[1]?.toUpperCase() || "";
-
-function notConfigured() {
-  $("lobbyBody").innerHTML = `
-    <p class="lede">Online play needs a Supabase project — it is free, and nothing here works without it.</p>
-    <div class="plan" style="display:block;line-height:1.9">
-      <b>1.</b> Create a project at supabase.com<br>
-      <b>2.</b> Run <b>supabase/migrations/0001_rooms.sql</b> in the SQL editor<br>
-      <b>3.</b> Enable <b>anonymous sign-ins</b> under Authentication → Providers<br>
-      <b>4.</b> Paste the Project URL and anon key into <b>app/config.js</b>
-    </div>
-    <div class="err">app/config.js is empty, so there is nothing to connect to.</div>`;
-}
-
-/* The clock is redrawn every second in place rather than by re-rendering the
-   view, which would reset hover and focus mid-turn. When it runs out, whoever
-   notices tells the server; the server re-checks the deadline itself, so this
-   cannot be used to hurry anyone. The stagger keeps three browsers from all
-   firing the same nudge at the same instant. */
-function stopTimers() {
-  clearInterval(ticker); ticker = null;
-  clearInterval(beat);   beat = null;
-}
-
-function startTimers() {
-  stopTimers();
-  beat = setInterval(() => { if (code) heartbeat(code); }, 15000);
-  ticker = setInterval(async () => {
-    const el = document.getElementById("clock");
-    if (!snap || !snap.room.deadline || snap.room.phase === "game_over") {
-      if (el) el.textContent = "";
-      return;
-    }
-    const left = Math.ceil((new Date(snap.room.deadline) - Date.now()) / 1000);
-    if (el) {
-      el.textContent = left > 0 ? `${left}s` : "time";
-      el.classList.toggle("urgent", left <= 10);
-    }
-    if (left > 0 || nudging) return;
-
-    const mySeat = snap.seats.find(s => s.player_id === meId)?.seat ?? 0;
-    await new Promise(r => setTimeout(r, 250 * mySeat));   // stagger
-    if (nudging) return;
-    nudging = true;
-    try { await nudge(code); } catch { /* someone else got there first */ }
-    finally { nudging = false; }
-  }, 1000);
-}
+const clock = makeClock({
+  code: () => code,
+  snap: () => snap,
+  seat: () => snap?.seats.find(s => s.player_id === meId)?.seat ?? 0,
+  nudge, heartbeat,
+});
+const gate = makeGate();
 
 /* One subscription for the whole table. Which view is shown is decided purely by
    the server's phase, so every client agrees on what is happening. */
@@ -84,17 +41,15 @@ async function watch(newCode) {
   location.hash = code;
   if (unsubscribe) { unsubscribe(); unsubscribe = null; }
   unsubscribe = await subscribeGame(code, onSnapshot);
-  startTimers();
+  clock.start();
   heartbeat(code);
 }
 
 /* Animations run against the table as it currently stands, before the new
    snapshot replaces it — the winning cards only exist in the DOM at that point,
-   because the server has already moved on to the next trick. Snapshots that
-   arrive mid-animation are queued rather than dropped, so the table always
-   settles on the latest state. */
+   because the server has already moved on to the next trick. */
 async function onSnapshot(next) {
-  if (animating) { queuedSnap = next; return; }
+  if (gate.busy) { gate.hold(next); return; }
 
   const prev = snap;
   lobbyBusy(false);
@@ -109,8 +64,7 @@ async function onSnapshot(next) {
   const dealt = freshDeal(prev, next);
   if (!trick && !dealt) { snap = next; renderTable(next); return; }
 
-  animating = true;
-  try {
+  await gate.run(next, async () => {
     if (trick) {
       /* Put the finished trick on the table first. The winning card has never
          been rendered — it arrived in the same update that cleared the trick —
@@ -125,13 +79,7 @@ async function onSnapshot(next) {
       showTable(true);
       await shuffleCurtain("playpanel", next.room.round + 1, r ? r.cards : 0);
     }
-  } finally {
-    animating = false;
-    const latest = queuedSnap || next;
-    queuedSnap = null;
-    snap = latest;
-    renderTable(latest);
-  }
+  }, latest => { snap = latest; renderTable(latest); });
 }
 
 /* Once dealing starts, online play moves out of the lobby panel and into the
@@ -205,8 +153,8 @@ async function doPlay(card) {
 async function doLeave() {
   try {
     lobbyBusy(true, "leaving…");
-    stopTimers();
-    snap = null; queuedSnap = null; animating = false;
+    clock.stop();
+    snap = null; gate.reset();
     if (unsubscribe) { unsubscribe(); unsubscribe = null; }
     if (code) await leaveRoom(code);
   } catch (e) {
@@ -224,13 +172,13 @@ async function doLeave() {
 async function showJoinForm() {
   const remembered = lastRoom();
   renderJoinForm(
-    { name: remembered?.name || "", code: hashCode() || "", players: 4 },
+    { name: remembered?.name || "", code: hashCode() || "", players: 4, game: "judgement" },
     {
       onCreate: async (name, players) => {
         if (!name) return lobbyError("Your name, first.");
         try {
           lobbyError(""); lobbyBusy(true, "setting the table…");
-          await watch(await createRoom(name, players));
+          await watch(await createRoom(name, players, "judgement"));
         } catch (e) { lobbyError(e.message); lobbyBusy(false); }
       },
       onJoin: async (name, joinCode) => {
@@ -248,7 +196,7 @@ async function showJoinForm() {
 
 export async function startOnline() {
   showLobby(true);
-  if (!isConfigured()) return notConfigured();
+  if (!isConfigured()) return notConfigured("0001_rooms.sql");
 
   try {
     const user = await signIn();

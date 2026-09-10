@@ -1,6 +1,6 @@
 import {$} from "../dom.js";
 import {G} from "../state.js";
-import {cum,ordered,lastCompleteRound,fmt} from "../../shared/rules.js";
+import {cum,ordered,lastCompleteRound,fmtFor} from "../../shared/rules.js";
 
 /* ---------- chart ---------- */
 function renderChart(){
@@ -18,7 +18,7 @@ function renderChart(){
   series.forEach(s=>{if(upto===0)return;const d=s.c2.slice(0,upto+1).map((v,i)=>`${i?'L':'M'}${x(i)},${y(v)}`).join(" ");
     g+=`<path d="${d}" fill="none" stroke="${s.c}" stroke-width="${s.c2[upto]===topTot?3.5:2.2}" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${x(upto)}" cy="${y(s.c2[upto])}" r="4.5" fill="${s.c}" stroke="#FBFAF6" stroke-width="2"/>`;});
   if(upto>0){const ends=series.map(s=>({s,yy:y(s.c2[upto])})).sort((a,b)=>a.yy-b.yy);for(let i=1;i<ends.length;i++)if(ends[i].yy-ends[i-1].yy<15)ends[i].yy=ends[i-1].yy+15;
-    ends.forEach(e=>{g+=`<text x="${x(upto)+10}" y="${e.yy+4}" font-family="Libre Franklin,sans-serif" font-size="12.5" font-weight="600" fill="${e.s.c}">${e.s.n} <tspan font-family="IBM Plex Mono,monospace" font-weight="500">${fmt(e.s.c2[upto])}</tspan></text>`;});}
+    ends.forEach(e=>{g+=`<text x="${x(upto)+10}" y="${e.yy+4}" font-family="Libre Franklin,sans-serif" font-size="12.5" font-weight="600" fill="${e.s.c}">${e.s.n} <tspan font-family="IBM Plex Mono,monospace" font-weight="500">${fmtFor(G,e.s.c2[upto])}</tspan></text>`;});}
   $("chart").innerHTML=g;
   $("legend").innerHTML=series.map(s=>`<span><i style="background:${s.c}"></i>${s.n}</span>`).join("")+`<span style="margin-left:auto">Thick line = current leader</span>`;
   // the loser's clip rides the end of the lowest line, in the chart's own coordinates
