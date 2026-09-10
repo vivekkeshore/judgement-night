@@ -12,6 +12,7 @@ import { trickWinner } from "../../shared/rules.js";
 
 export const SHUFFLE_MS = 2600;
 export const TRICK_MS   = 2000;
+export const DECLARE_MS = 2800;
 
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
@@ -72,7 +73,8 @@ export async function sweepTrick(winnerSeat, winnerName) {
   await wait(TRICK_MS);
 }
 
-/* A deck riffles and deals itself out before the new hand appears. */
+/* A deck riffles and deals itself out before the new hand appears. Shared: a
+   shuffle is a shuffle, whichever game is about to be dealt. */
 export async function shuffleCurtain(mountId, roundNo, cardCount) {
   const host = $(mountId);
   if (!host) return;
@@ -85,4 +87,45 @@ export async function shuffleCurtain(mountId, roundNo, cardCount) {
       <p class="shuffletext">Shuffling…<br><small>round ${roundNo} · ${cardCount} card${cardCount === 1 ? "" : "s"} each</small></p>
     </div>`;
   await wait(SHUFFLE_MS);
+}
+
+/* ------------------------------------------------------------- declare ----
+   Declare has no tricks to sweep, and the one moment worth stopping for is
+   somebody calling the round. */
+
+/* Did somebody just declare? Read off the events log rather than off the
+   results, because the payload says who called it and how it went — and because
+   the events log is the same shared history that decides the dethroned king, so
+   every browser sees the same declaration whatever order its updates arrived
+   in. Returns null on the first snapshot, when everything is "new". */
+export function newDeclaration(prev, next) {
+  if (!prev) return null;
+  const seen = (prev.events || []).reduce((m, e) => Math.max(m, e.id || 0), 0);
+  const e = (next.events || [])
+    .filter(x => x.kind === "round_scored" && (x.id || 0) > seen && x.payload
+                 && x.payload.declarer !== undefined)
+    .pop();
+  if (!e) return null;
+  return {
+    seat: e.payload.declarer,
+    count: e.payload.count ?? 0,
+    lower: e.payload.lower ?? 0,
+    round: e.payload.round,
+  };
+}
+
+/* Hold the table for a beat on the result. Whether the call came off is the
+   whole drama of the round, so it says which, rather than just who. */
+export async function declareReveal(mountId, { name, count, lower }) {
+  const host = $(mountId);
+  if (!host) return;
+  const ok = lower === 0;
+  const banner = document.createElement("div");
+  banner.className = `declareflash ${ok ? "good" : "bad"}`;
+  banner.innerHTML = `<b>${name} declares at ${count}</b><span>${ok
+    ? "nobody was lower — that round costs them nothing"
+    : `caught: ${lower} player${lower === 1 ? " was" : "s were"} lower, ${20 * lower} + ${count} = ${20 * lower + count}`}</span>`;
+  host.appendChild(banner);
+  requestAnimationFrame(() => banner.classList.add("on"));
+  await wait(DECLARE_MS);
 }

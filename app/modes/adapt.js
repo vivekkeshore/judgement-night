@@ -36,7 +36,10 @@ export function snapshotToG(snap) {
 /* Who was dethroned, according to the server rather than to this browser's own
    memory. The apsara leaving a seat is a local observation — two clients that
    received different batches of updates would disagree — whereas the
-   lead_change events are one shared history every screen can read. */
+   lead_change events are one shared history every screen can read.
+
+   Both games emit these, with the same shape; only the direction of "leading"
+   differs, and that is settled server-side before the event is written. */
 export function fallenSeatFrom(events) {
   for (let i = (events || []).length - 1; i >= 0; i--) {
     if (events[i].kind === "lead_change") {
@@ -45,4 +48,33 @@ export function fallenSeatFrom(events) {
     }
   }
   return null;
+}
+
+/* The Declare equivalent. Declare's points come out of a scoring rule with no
+   local equivalent — there is nothing like "bid, and whether you made it" to
+   reconstruct them from — so the server's numbers are carried across verbatim in
+   G.points, which totals() prefers when it is there.
+
+   G.game is what tells the shared UI that low is good here: the apsara stands on
+   the smallest total, the slipper goes to the largest, and the points are shown
+   unsigned because they are penalties rather than winnings. */
+export function declareSnapshotToG(snap) {
+  const players = snap.seats.map(s => {
+    const c = colorFor(s.name, s.seat);
+    return { n: s.name, c, navy: c === NAVY };
+  });
+  const cards = snap.rounds.map(r => r.cards);
+
+  const points = cards.map(() => players.map(() => null));
+  const done = cards.map(() => false);
+
+  /* declare_score_round writes every seat at once, so one row marks the round
+     scored — the same reasoning as the Judgement adapter above. */
+  for (const r of snap.results || []) {
+    if (!points[r.round]) continue;
+    points[r.round][r.seat] = r.points;
+    done[r.round] = true;
+  }
+
+  return { game: "declare", players, cards, points, done };
 }

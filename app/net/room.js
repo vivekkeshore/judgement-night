@@ -21,11 +21,31 @@ const unwrap = ({ data, error }) => {
   return data;
 };
 
-export async function createRoom(name, players) {
+export async function createRoom(name, players, game = "judgement", rounds = 8) {
   const sb = await client(); await signIn();
-  const code = unwrap(await sb.rpc("create_room", { p_name: name, p_players: players }));
+  const code = unwrap(await sb.rpc("create_room",
+    { p_name: name, p_players: players, p_game: game, p_rounds: rounds }));
   rememberRoom(code, name);
   return code;
+}
+
+/* Which game a table is playing, so a shared #CODE link or a remembered room
+   opens the right client. Reading rooms.game rather than storing it alongside
+   the code keeps every link that was ever shared working, including the ones
+   handed out before Declare existed.
+
+   Defaults to judgement on any failure, which covers the one case that matters:
+   a database that has not had 0008_declare.sql applied yet has no `game`
+   column, so the select errors and every room is a Judgement room. */
+export async function roomGame(code) {
+  try {
+    const sb = await client(); await signIn();
+    const room = unwrap(await sb.from("rooms").select("game")
+      .eq("code", String(code).toUpperCase()).maybeSingle());
+    return room?.game === "declare" ? "declare" : "judgement";
+  } catch {
+    return "judgement";
+  }
 }
 
 /* Also the rejoin path: the SQL function returns your existing seat if you

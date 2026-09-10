@@ -88,6 +88,7 @@ export function renderPlay(state, meId, { onBid, onPlay, onLeave, onRestart }, m
     });
   }).join("");
 
+  $(mountId).classList.remove("dcl");
   $(mountId).innerHTML = `
     <div class="f-head" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px">
       <span class="trumpcall ${isRed(trump) ? "red" : "blk"}">

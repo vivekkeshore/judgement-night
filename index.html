@@ -25,13 +25,24 @@
     </div>
   </header>
 
-  <!-- MODE PICKER -->
+  <!-- GAME PICKER -->
   <section class="setup" id="modepick" hidden>
+    <h2>What are we playing?</h2>
+    <p class="lede">Two card games, one table. Judgement is the bidding game — call your tricks and hit the number exactly. Declare is Least Count — shed cards until your hand is worth ten or less, then call it before anyone gets lower.</p>
+    <div class="actions">
+      <button class="btn gold" id="pickJudgement" style="padding:12px 22px;font-size:15px">Judgement</button>
+      <button class="btn gold" id="pickDeclare" style="padding:12px 22px;font-size:15px">Declare</button>
+    </div>
+  </section>
+
+  <!-- JUDGEMENT: ONLINE OR ON PAPER -->
+  <section class="setup" id="judgepick" hidden>
     <h2>Judgement, your way</h2>
     <p class="lede">Deal a real hand together online, each player seeing only their own cards — or keep score by hand on this device while you play with physical cards.</p>
     <div class="actions">
       <button class="btn gold" id="modeOnline" style="padding:12px 22px;font-size:15px">Play online together</button>
       <button class="btn" id="modeManual" style="padding:12px 22px;font-size:15px">Score by hand on this device</button>
+      <button class="btn" id="backToGames">← Other game</button>
     </div>
   </section>
 
@@ -98,7 +109,7 @@
     </div>
   </section>
 
-  <p class="foot">Bidding starts one seat clockwise each round · the last bidder may not make the bids add up to the cards dealt · Correct call = 10 + bid · Wrong call = −(10 + bid) · A round only counts once you hit Score it · Saved in this browser automatically</p>
+  <p class="foot" id="foot">Bidding starts one seat clockwise each round · the last bidder may not make the bids add up to the cards dealt · Correct call = 10 + bid · Wrong call = −(10 + bid) · A round only counts once you hit Score it · Saved in this browser automatically</p>
 </div>
 <div id="intro" hidden></div>
 <div class="stock" aria-label="Player performance ticker"><div class="track" id="stock"></div></div>

@@ -103,6 +103,26 @@ input{font:inherit}
 .btn.danger:hover{background:rgba(179,32,46,.35)}
 .btn:focus-visible,input:focus-visible,.res:focus-visible,.donebtn:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 
+/* .btn above is a ghost button for the DARK masthead: transparent, with cream
+   text and a translucent white border. On a .setup panel — which is cream — that
+   is cream on cream, so Join, Leave table, "Score by hand on this device" and
+   the back link were all invisible in every browser. Only the .gold variants
+   showed, because they bring their own background.
+   Same trap as the disabled bid button and the disabled Declare button; the
+   light-panel treatment now lives in one place and .panelbtn shares it. */
+.setup .btn,.panelbtn{padding:10px 16px;border-radius:9px;border:1px solid var(--card-deep);
+  background:#fff;color:var(--ink);font-weight:600;font-size:13.5px;letter-spacing:.02em}
+.setup .btn:hover,.panelbtn:hover{background:var(--gold-pale);border-color:var(--gold)}
+.setup .btn.gold,.panelbtn.gold{background:var(--gold);border-color:var(--gold-deep);color:var(--ink)}
+.setup .btn.gold:hover,.panelbtn.gold:hover{background:#E6B65A}
+.setup .btn.danger,.panelbtn.danger{color:var(--ruby);border-color:#F2B8BE;background:#fff}
+.setup .btn.danger:hover,.panelbtn.danger:hover{background:var(--ruby-pale);border-color:var(--ruby)}
+/* A disabled button has to read as dead rather than as unresponsive — Deal sits
+   disabled for the whole lobby, and Declare for most of a Declare game. */
+.setup .btn:disabled,.panelbtn:disabled{opacity:.45;cursor:not-allowed;
+  background:var(--card-shade);border-color:var(--card-deep);color:var(--ink-mute);box-shadow:none}
+.setup .btn:disabled:hover,.panelbtn:disabled:hover{background:var(--card-shade);border-color:var(--card-deep)}
+
 /* setup */
 .setup{max-width:720px;margin:36px auto;background:var(--card);border-radius:16px;padding:32px 34px;box-shadow:0 18px 40px rgba(0,0,0,.35)}
 .setup h2{font-family:var(--display);font-size:38px;font-weight:900;margin:0 0 6px;line-height:1}
@@ -457,8 +477,9 @@ tfoot td.navy{color:#8FA3FF!important}
 .shuffle{display:grid;place-items:center;gap:20px;min-height:260px;padding:26px 0}
 .shuffle .deck{position:relative;width:var(--cardw);height:calc(var(--cardw) * 1.42)}
 .shuffle .back{position:absolute;inset:0;border-radius:10px;border:2px solid var(--gold);
-  background:linear-gradient(135deg,#5A0E18,#B3202E 45%,#5A0E18);
-  background-image:repeating-linear-gradient(45deg,rgba(217,164,65,.28) 0 7px,transparent 7px 14px);
+  background-color:#8C1622;
+  background-image:repeating-linear-gradient(45deg,rgba(217,164,65,.28) 0 7px,transparent 7px 14px),
+                   linear-gradient(135deg,#5A0E18,#B3202E 45%,#5A0E18);
   box-shadow:0 8px 18px rgba(0,0,0,.45);
   animation:riffle 1.1s ease-in-out 2, dealout .9s cubic-bezier(.4,0,.7,1) 2.2s forwards;
   animation-delay:calc(var(--i) * .07s), calc(2.2s + var(--i) * .07s)}
@@ -478,15 +499,9 @@ tfoot td.navy{color:#8FA3FF!important}
   .trickcard.taking,.shuffle .back,.winbanner,.shuffletext,.names .nm.tookit{animation:none!important}
 }
 
-/* buttons on the light panels. .btn is styled for the dark masthead and turns
-   invisible here, which has caught me out once already. */
-.panelbtn{padding:10px 16px;border-radius:9px;border:1px solid var(--card-deep);
-  background:#fff;color:var(--ink);font-weight:600;font-size:13.5px}
-.panelbtn:hover{background:var(--gold-pale);border-color:var(--gold)}
-.panelbtn.gold{background:var(--gold);border-color:var(--gold-deep);color:var(--ink)}
-.panelbtn.gold:hover{background:#E6B65A}
-.panelbtn.danger{color:var(--ruby);border-color:#F2B8BE}
-.panelbtn.danger:hover{background:var(--ruby-pale);border-color:var(--ruby)}
+/* Buttons on the light panels are defined once, up beside .btn — see the note
+   there about cream-on-cream. This is only what .panelbtn needs on top. */
+.panelbtn{display:inline-block}
 
 /* ============================================================ small screens ==
    Measured on a 390px phone before this block: the page scrolled sideways by
@@ -578,4 +593,94 @@ tfoot td.navy{color:#8FA3FF!important}
   .bidbtn{min-width:42px;height:38px;font-size:16px}
   .panelbtn{width:100%;text-align:center}
   .actions{gap:8px}
+}
+
+/* ================================================================= declare ==
+   Least Count on the same furniture as Judgement. Three things are new: the
+   pile you draw from, cards you tick rather than play, and a count that is the
+   whole point of the game and so gets said out loud. */
+
+/* Your hand's value, where Judgement puts the trump. Turns gold the moment
+   declaring becomes legal, because that is the only number anyone is watching. */
+.countcall{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:9px;
+  background:var(--card-shade);border:1px solid var(--card-deep);font-family:var(--display);
+  font-weight:700;color:var(--ink)}
+.countcall b{font-size:26px;line-height:1.05}
+.countcall small{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-mute);font-weight:600}
+.countcall.ready{background:var(--gold-pale);border-color:var(--gold)}
+.countcall.ready b{color:var(--gold-deep)}
+
+/* the two places a card can come from, side by side */
+.pile{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start}
+.pilehalf{display:grid;gap:6px}
+.pilelabel{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-mute);font-weight:600}
+.pilehand{min-height:calc(var(--cardw) * 1.42)}
+
+/* The stock is a face-down deck with a number on it. Both gradients go in one
+   background-image, layered — writing `background:` and then `background-image:`
+   as separate declarations silently throws the first gradient away, which left
+   the card transparent and the count unreadable. */
+.stockpile{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
+  width:var(--cardw);height:calc(var(--cardw) * 1.42);border-radius:10px;
+  border:2px solid var(--gold);color:#F7E9C6;
+  background-color:#8C1622;
+  background-image:repeating-linear-gradient(45deg,rgba(217,164,65,.28) 0 7px,transparent 7px 14px),
+                   linear-gradient(135deg,#5A0E18,#B3202E 45%,#5A0E18);
+  box-shadow:0 3px 8px rgba(0,0,0,.28);text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.stockpile b{font-family:var(--mono);font-size:calc(var(--cardw) * .34);font-weight:600}
+.stockpile i{font-style:normal;font-family:var(--mono);font-size:9px;letter-spacing:.12em;
+  text-transform:uppercase;opacity:.8}
+.stockpile.playable{cursor:pointer;transition:transform .12s ease,box-shadow .12s ease}
+.stockpile.playable:hover,.stockpile.playable:focus-visible{transform:translateY(-6px);
+  box-shadow:0 10px 18px rgba(0,0,0,.34)}
+
+/* Ticked for throwing. Deliberately not the same treatment as .playable hover:
+   a selected card stays lifted after the pointer leaves, because you are
+   building a group over several clicks and need to see what is already in it. */
+.card.sel{border-color:var(--gold);background:var(--gold-pale);
+  transform:translateY(-10px);box-shadow:0 10px 18px rgba(0,0,0,.3),0 0 0 2px var(--gold)}
+.card.playable.sel:hover{transform:translateY(-12px)}
+
+.declarebar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.declarebar .hint{flex:1 1 220px}
+
+/* the round's verdict, held for a beat before the next deal */
+.declareflash{position:absolute;left:50%;top:50%;transform:translate(-50%,-40%) scale(.94);
+  opacity:0;transition:opacity .45s ease,transform .45s cubic-bezier(.34,1.3,.5,1);
+  display:grid;gap:6px;justify-items:center;text-align:center;z-index:6;
+  padding:18px 26px;border-radius:14px;background:#fff;
+  border:2px solid var(--gold);box-shadow:0 18px 44px rgba(0,0,0,.3);max-width:88%}
+.declareflash.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.declareflash b{font-family:var(--display);font-size:24px;font-weight:900;color:var(--ink)}
+.declareflash span{font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:var(--ink-mute)}
+.declareflash.good{border-color:var(--good)}
+.declareflash.good b{color:var(--good)}
+.declareflash.bad{border-color:var(--ruby)}
+.declareflash.bad b{color:var(--ruby)}
+.playpanel{position:relative}
+@media(prefers-reduced-motion:reduce){
+  .declareflash{transition:none;opacity:1;transform:translate(-50%,-50%)}
+}
+
+/* the declare score table marks a clean round rather than a made bid */
+#scoretable td.tot.won{color:var(--good)}
+
+@media(max-width:700px){
+  /* Same reasoning as Judgement's ordering, but the two games want different
+     answers. Judgement's action is the bid buttons, which belong above the
+     hand. Declare's is the Throw button, which acts on cards you have just
+     ticked — and a turn is throw *then* pick, so the pile comes after both. */
+  .playpanel.dcl .f-hand  {order:1}
+  .playpanel.dcl .f-action{order:2}
+  .playpanel.dcl .f-pile  {order:3}
+  .playpanel.dcl .f-seats {order:4}
+  .pile{gap:14px}
+  .pilehand{--cardw:56px}
+  .stockpile{--cardw:56px}
+  .countcall{padding:5px 10px}
+  .countcall b{font-size:22px}
+  .declareflash{padding:14px 18px}
+  .declareflash b{font-size:19px}
 }
